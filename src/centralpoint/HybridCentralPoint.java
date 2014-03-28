@@ -33,8 +33,10 @@ import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import netlib.PeerInfo;
 
 /*
  * This class simulates a peer-to-peer hybrid model.
@@ -58,7 +60,7 @@ import java.util.List;
 public class HybridCentralPoint implements AsyncCallbacks
 {
 	private Server m_server;
-	private List<InetAddress> m_peerAddresses = new ArrayList<InetAddress>();
+	private List m_peers = new LinkedList();
 
 	public HybridCentralPoint() throws IOException
 	{
@@ -69,33 +71,48 @@ public class HybridCentralPoint implements AsyncCallbacks
 	@Override
 	public boolean handleWrite(SocketChannel ch, int nr_wrote)
 	{
-		return false;
+		return true;
 	}
 
 	@Override
 	public boolean handleRead(SocketChannel ch, ByteBuffer buf, int nread)
 	{
-		byte[] data = buf.array();
+		while (buf.hasRemaining()) {
+			byte request = buf.get();
 
-		if (data[0] == 0x1A) {
-			ByteBuffer buffer = ByteBuffer.allocate(1024);
+			switch (request) {
+			case 0x1A: {
+				ByteBuffer buffer = ByteBuffer.allocate(1024);
+				buffer.putInt(m_peers.size());
 
-			buffer.putInt(m_peerAddresses.size() - 1);
-			for (InetAddress address : m_peerAddresses)
-				if (address != ch.socket().getInetAddress())
-					buffer.put(address.getAddress());
+				Iterator it = m_peers.iterator();
+				while (it.hasNext()) {
+					PeerInfo info = (PeerInfo) it.next();
 
-			m_server.send(ch, buffer.array());
-			return true;
+					buffer.put(info.address.getAddress());
+					buffer.putInt(info.port);
+				}
+
+				m_server.send(ch, buffer.array());
+				break;
+			} case 0x1B: {
+				PeerInfo info = new PeerInfo();
+				info.port = buf.getInt();
+				info.address = ch.socket().getInetAddress();
+
+				m_peers.add(info);
+				break;
+			} default:
+				return false;
+			}
 		}
 
-		return false;
+		return true;
 	}
 
 	@Override
 	public boolean handleConnection(SocketChannel ch)
 	{
-		m_peerAddresses.add(ch.socket().getInetAddress());
 		return true;
 	}
 

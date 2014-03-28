@@ -24,8 +24,16 @@
 package p2pchat;
 
 import java.awt.event.KeyEvent;
-import java.io.IOException;
+import java.awt.event.MouseEvent;
+
 import javax.swing.DefaultListModel;
+
+import java.io.IOException;
+
+import java.util.Iterator;
+import java.util.List;
+
+import netlib.PeerInfo;
 
 public class P2PChat extends javax.swing.JFrame
 {
@@ -89,6 +97,11 @@ public class P2PChat extends javax.swing.JFrame
         jScrollPane3.setViewportView(chatParticipants);
 
         peerList.setModel(peerListModel);
+        peerList.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                peerListMouseClicked(evt);
+            }
+        });
         jScrollPane4.setViewportView(peerList);
 
         sendButton.setText("Send");
@@ -129,17 +142,41 @@ public class P2PChat extends javax.swing.JFrame
 
 	private void findPeersButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_findPeersButtonActionPerformed
 	{
-		String[] peers = peer.discoverPeers("localhost", 9118);
-		for (String peer : peers)
-			peerListModel.addElement(peer);
+		List peers = peer.discoverPeers("localhost", 9118);
+		if (peers == null)
+			return;
+
+		Iterator it = peers.iterator();
+		while (it.hasNext()) {
+			PeerInfo info = (PeerInfo) it.next();
+			peerListModel.addElement(info.host + ":" + info.port);
+		}
 	}//GEN-LAST:event_findPeersButtonActionPerformed
 
     private void chatTextFieldKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_chatTextFieldKeyPressed
         if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
 			String message = chatTextField.getText();
+			chatTextField.setText("");
+
 			peer.sendMessage(message);
+			chatText.append(message);
 		}
     }//GEN-LAST:event_chatTextFieldKeyPressed
+
+    private void peerListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_peerListMouseClicked
+		if (evt.getButton() == MouseEvent.BUTTON1) {
+			String peerInfo = (String) peerList.getSelectedValue();
+			String peerHost = peerInfo.substring(0, peerInfo.indexOf(":"));
+			int peerPort = Integer.parseInt(peerInfo.substring(peerInfo.indexOf(":")+1, peerInfo.length()));
+
+			try {
+				peer.connect(peerHost, peerPort);
+			} catch (IOException e) {
+				chatText.append("Unable to connect to: " + peerInfo);
+				e.printStackTrace();
+			}
+		}
+    }//GEN-LAST:event_peerListMouseClicked
 
 	public static void main(String args[])
 	{

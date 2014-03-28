@@ -125,6 +125,7 @@ public class Server implements Runnable
 			return;
 		}
 
+		readBuffer.flip();
 		if (readnr == -1 || !listener.handleRead(ch, readBuffer, readnr))
 			close(ch);
 	}

@@ -38,7 +38,7 @@ public class Connection implements Runnable
 		this.port = port;
 		this.selector = this.initSelector();
 		this.listener = listener;
-		this.initiateConnection();
+		this.channel = this.initiateConnection();
 	}
 
 	public Connection(SocketChannel ch) throws IOException
@@ -145,6 +145,7 @@ public class Connection implements Runnable
 			return;
 		}
 
+		readBuffer.flip();
 		if (readnr == -1 || !listener.handleRead(channel, readBuffer, readnr)) {
 			channel.close();
 			key.cancel();

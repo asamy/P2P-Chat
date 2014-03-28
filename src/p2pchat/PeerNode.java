@@ -33,9 +33,14 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import netlib.AsyncCallbacks;
 import netlib.Connection;
+import netlib.PeerInfo;
 import netlib.Server;
 
 public class PeerNode implements AsyncCallbacks
@@ -45,6 +50,8 @@ public class PeerNode implements AsyncCallbacks
 
 	private PeerNode child;
 	private PeerNode parent;
+
+	private int port;
 
 	public PeerNode(PeerNode parent)
 	{
@@ -60,6 +67,7 @@ public class PeerNode implements AsyncCallbacks
 		this.parent = parent;
 		this.child  = null;
 		this.conn   = null;
+		this.port   = port;
 
 		server = new Server(null, port, this);
 		new Thread(server).start();
@@ -72,17 +80,6 @@ public class PeerNode implements AsyncCallbacks
 	public PeerNode getParent()
 	{
 		return parent;
-	}
-
-	/*
-	 * The following function creates a new Node and connects
-	 * it to @parent if @parent is not null.
-	*/
-	static public PeerNode create(PeerNode parent, String host, int port) throws IOException
-	{
-		PeerNode node = new PeerNode(parent, 9119);
-		node.connect(host, port);
-		return node;
 	}
 
 	public void connect(String host, int port) throws IOException
@@ -99,11 +96,13 @@ public class PeerNode implements AsyncCallbacks
 	 * If this function fails to connect or find any peers,
 	 * a null is returned.
 	*/
-	public String[] discoverPeers(String host, int port)
+	public List discoverPeers(String host, int port)
 	{
 		try {
 			Socket s = new Socket(host, port);
 			DataOutputStream out = new DataOutputStream(s.getOutputStream());
+			out.writeByte(0x1B);
+			out.writeInt(this.port);
 			out.writeByte(0x1A);
 
 			DataInputStream in = new DataInputStream(s.getInputStream());
@@ -111,12 +110,19 @@ public class PeerNode implements AsyncCallbacks
 			if (nr_peers <= 0)
 				return null;
 
-			String[] peers = new String[nr_peers];
+			List peers = new LinkedList();
 			for (int i = 0; i < nr_peers; ++i) {
 				byte[] peerAddress = new byte[4];
 				in.read(peerAddress);
 
-				peers[i] = InetAddress.getByAddress(peerAddress).getHostName();
+				String peerHost = InetAddress.getByAddress(peerAddress).getHostName();
+				int peerPort = in.readInt();
+
+				PeerInfo info = new PeerInfo();
+				info.port = peerPort;
+				info.host = peerHost;
+
+				peers.add(info);
 			}
 
 			s.close();
@@ -133,6 +139,9 @@ public class PeerNode implements AsyncCallbacks
 		ByteBuffer buffer = ByteBuffer.allocate(message.length() + 1);
 		buffer.put((byte)0x1A);
 		buffer.put(message.getBytes(Charset.forName("UTF-8")));
+
+		for (PeerNode peer = child; peer != null; peer = peer.child)
+			server.send(peer.conn.getChannel(), buffer.array());
 	}
 
 	@Override
