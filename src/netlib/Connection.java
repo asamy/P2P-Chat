@@ -10,32 +10,27 @@ import java.io.IOException;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-
 import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
-import java.util.ArrayList;
 
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 public class Connection implements Runnable
 {
-	private Map rspHandlers = Collections.synchronizedMap(new HashMap());
 	private InetAddress hostAddress;
 	private int port;
 	private Selector selector;
-	private ServerSocketChannel channel;
+	private SocketChannel channel;
 	private AsyncCallbacks listener;
 	private List changeRequests = new LinkedList();
-	private Map pendingData = new HashMap();
+	private List pendingData = new ArrayList();
 
 	public Connection(InetAddress hostAddress, int port, AsyncCallbacks listener) throws IOException
 	{
@@ -43,6 +38,18 @@ public class Connection implements Runnable
 		this.port = port;
 		this.selector = this.initSelector();
 		this.listener = listener;
+		this.initiateConnection();
+	}
+
+	public Connection(SocketChannel ch) throws IOException
+	{
+		this.selector = initSelector();
+		this.channel = ch;
+		ch.configureBlocking(false);
+
+		synchronized(this.changeRequests) {
+			this.changeRequests.add(new ChangeRequest(ch, ChangeRequest.REGISTER, SelectionKey.OP_WRITE));
+		}
 	}
 
 	private Selector initSelector() throws IOException
@@ -60,6 +67,11 @@ public class Connection implements Runnable
 			this.changeRequests.add(new ChangeRequest(ch, ChangeRequest.REGISTER, SelectionKey.OP_CONNECT));
 		}
 		return ch;
+	}
+
+	public SocketChannel getChannel()
+	{
+		return channel;
 	}
 
 	public void run()
@@ -107,81 +119,68 @@ public class Connection implements Runnable
 
 	private void finishConnection(SelectionKey key) throws IOException
 	{
-		SocketChannel socketChannel = (SocketChannel) key.channel();
-
 		try {
-			socketChannel.finishConnect();
+			channel.finishConnect();
 		} catch (IOException e) {
 			key.cancel();
 			return;
 		}
 
 		key.interestOps(SelectionKey.OP_WRITE);
-		if (!listener.handleConnection(socketChannel)) {
-			socketChannel.close();
+		if (!listener.handleConnection(channel)) {
+			channel.close();
 			key.cancel();
 		}
 	}
 
 	private void read(SelectionKey key) throws IOException
 	{
-		SocketChannel ch = (SocketChannel)key.channel();
-
-		ByteBuffer readBuffer = ByteBuffer.allocate(8192);
+		ByteBuffer readBuffer = ByteBuffer.allocate(1024);
 		int readnr;
 		try {
-			readnr = ch.read(readBuffer);
+			readnr = channel.read(readBuffer);
 		} catch (IOException e) {
 			key.cancel();
-			ch.close();
+			channel.close();
 			return;
 		}
 
-		if (readnr == -1 || !listener.handleRead(ch, readBuffer, readnr)) {
-			ch.close();
+		if (readnr == -1 || !listener.handleRead(channel, readBuffer, readnr)) {
+			channel.close();
 			key.cancel();
 		}
 	}
 
 	private void write(SelectionKey key) throws IOException
 	{
-		SocketChannel ch = (SocketChannel) key.channel();
 		int nr_wrote = 0;
 
 		synchronized(this.pendingData) {
-			List queue = (List) this.pendingData.get(ch);
-			while (!queue.isEmpty()) {
-				ByteBuffer buf = (ByteBuffer) queue.get(0);
-				nr_wrote += ch.write(buf);
+			while (!pendingData.isEmpty()) {
+				ByteBuffer buf = (ByteBuffer) pendingData.get(0);
+				channel.write(buf);
 
+				nr_wrote += buf.remaining();
 				if (buf.remaining() > 0)
 					break;
-				queue.remove(0);
+				pendingData.remove(0);
 			}
 
-			if (queue.isEmpty())
+			if (pendingData.isEmpty())
 				key.interestOps(SelectionKey.OP_READ);
 		}
 
-		if (!listener.handleWrite(ch, nr_wrote)) {
-			ch.close();
+		if (!listener.handleWrite(channel, nr_wrote)) {
+			channel.close();
 			key.cancel();
 		}
 	}
 
 	public void send(byte[] data) throws IOException
 	{
-		SocketChannel socket = this.initiateConnection();
-
 		synchronized (this.pendingData) {
-			List queue = (List) this.pendingData.get(socket);
-			if (queue == null) {
-				queue = new ArrayList();
-				this.pendingData.put(socket, queue);
-			}
-			queue.add(ByteBuffer.wrap(data));
+			this.pendingData.add(data);
 		}
-
 		this.selector.wakeup();
 	}
 }

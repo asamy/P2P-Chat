@@ -32,6 +32,7 @@ import java.net.Socket;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.Charset;
 
 import netlib.AsyncCallbacks;
 import netlib.Connection;
@@ -44,6 +45,15 @@ public class PeerNode implements AsyncCallbacks
 
 	private PeerNode child;
 	private PeerNode parent;
+
+	public PeerNode(PeerNode parent)
+	{
+		this.parent = parent;
+		this.child  = child;
+
+		this.conn   = null;
+		this.server = null;
+	}
 
 	public PeerNode(PeerNode parent, int port) throws IOException
 	{
@@ -106,7 +116,7 @@ public class PeerNode implements AsyncCallbacks
 				byte[] peerAddress = new byte[4];
 				in.read(peerAddress);
 
-				peers[i] = InetAddress.getByAddress(peerAddress).getHostAddress();
+				peers[i] = InetAddress.getByAddress(peerAddress).getHostName();
 			}
 
 			s.close();
@@ -114,25 +124,46 @@ public class PeerNode implements AsyncCallbacks
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		// Shouldn't be reached but to make NetBeans shut the hell up.
+
 		return null;
+	}
+
+	public void sendMessage(String message)
+	{
+		ByteBuffer buffer = ByteBuffer.allocate(message.length() + 1);
+		buffer.put((byte)0x1A);
+		buffer.put(message.getBytes(Charset.forName("UTF-8")));
 	}
 
 	@Override
 	public boolean handleWrite(SocketChannel ch, int nr_wrote)
 	{
-		return false;
+		return true;
 	}
 
 	@Override
 	public boolean handleRead(SocketChannel ch, ByteBuffer buffer, int nread)
 	{
+		byte request = buffer.get();
+
+		if (request == 0x1A) {
+			String str = new String(buffer.array(), Charset.forName("UTF-8"));
+			return true;
+		}
+
 		return false;
 	}
 
 	@Override
 	public boolean handleConnection(SocketChannel ch)
 	{
-		return false;
+		PeerNode peer = new PeerNode(this);
+		try {
+			peer.conn = new Connection(ch);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return true;
 	}
 }

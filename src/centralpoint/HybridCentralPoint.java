@@ -27,12 +27,13 @@ import netlib.AsyncCallbacks;
 import netlib.Server;
 
 import java.io.IOException;
+
 import java.net.InetAddress;
-import java.net.Socket;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /*
@@ -68,7 +69,7 @@ public class HybridCentralPoint implements AsyncCallbacks
 	@Override
 	public boolean handleWrite(SocketChannel ch, int nr_wrote)
 	{
-		return true;
+		return false;
 	}
 
 	@Override
@@ -85,7 +86,6 @@ public class HybridCentralPoint implements AsyncCallbacks
 					buffer.put(address.getAddress());
 
 			m_server.send(ch, buffer.array());
-			m_server.close(ch);
 			return true;
 		}
 

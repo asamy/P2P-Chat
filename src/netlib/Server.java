@@ -125,15 +125,8 @@ public class Server implements Runnable
 			return;
 		}
 
-		if (readnr == -1 || !listener.handleRead(ch, readBuffer, readnr)) {
-			try {
-				ch.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			} finally {
-				key.cancel();
-			}
-		}
+		if (readnr == -1 || !listener.handleRead(ch, readBuffer, readnr))
+			close(ch);
 	}
 
 	private void write(SelectionKey key) throws IOException
@@ -156,10 +149,8 @@ public class Server implements Runnable
 				key.interestOps(SelectionKey.OP_READ);
 		}
 
-		if (!listener.handleWrite(ch, nr_wrote)) {
-			ch.close();
-			key.cancel();
-		}
+		if (!listener.handleWrite(ch, nr_wrote))
+			close(ch);
 	}
 
 	public void send(SocketChannel ch, byte[] data)
@@ -188,5 +179,15 @@ public class Server implements Runnable
 			e.printStackTrace();
 		}
 		ch.keyFor(this.selector).cancel();
+		synchronized(this.changeRequests) {
+			Iterator changes = this.changeRequests.iterator();
+			while (changes.hasNext()) {
+				ChangeRequest req = (ChangeRequest) changes.next();
+				if (req.socket == ch) {
+					this.changeRequests.remove(req);
+					break;
+				}
+			}
+		}
 	}
 }
