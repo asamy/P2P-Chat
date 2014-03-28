@@ -37,49 +37,60 @@ import netlib.AsyncCallbacks;
 import netlib.Connection;
 import netlib.Server;
 
-public class PeerNode implements AsyncCallbacks {
-    private Server server;
-    private Connection conn;
+public class PeerNode implements AsyncCallbacks
+{
+	private Server server;
+	private Connection conn;
 
-    private PeerNode child;
-    private PeerNode parent;
+	private PeerNode child;
+	private PeerNode parent;
 
-    public PeerNode(PeerNode parent, int port) throws IOException {
+	public PeerNode(PeerNode parent, int port) throws IOException
+	{
 		this.parent = parent;
 		this.child  = null;
 		this.conn   = null;
 
 		server = new Server(null, port, this);
 		new Thread(server).start();
-    }
+	}
 
-    public PeerNode getChild() { return child; }
-    public PeerNode getParent() { return parent; }
+	public PeerNode getChild()
+	{
+		return child;
+	}
+	public PeerNode getParent()
+	{
+		return parent;
+	}
 
-    /*
-     * The following function creates a new Node and connects
-     * it to @parent if @parent is not null.
-    */
-    static public PeerNode create(PeerNode parent, String host, int port) throws IOException {
+	/*
+	 * The following function creates a new Node and connects
+	 * it to @parent if @parent is not null.
+	*/
+	static public PeerNode create(PeerNode parent, String host, int port) throws IOException
+	{
 		PeerNode node = new PeerNode(parent, 9119);
 		node.connect(host, port);
 		return node;
-    }
+	}
 
-    public void connect(String host, int port) throws IOException {
+	public void connect(String host, int port) throws IOException
+	{
 		conn = new Connection(InetAddress.getByName(host), port, this);
 		new Thread(conn).start();
-    }
+	}
 
-    /* 
-     * The following function attempts to get a list
-     * of available peers from the central point.  See
-     * HybridCentralPoint.java for more information.
+	/*
+	 * The following function attempts to get a list
+	 * of available peers from the central point.  See
+	 * HybridCentralPoint.java for more information.
 	 *
-     * If this function fails to connect or find any peers,
-     * a null is returned.
-    */
-    public String[] discoverPeers(String host, int port) {
+	 * If this function fails to connect or find any peers,
+	 * a null is returned.
+	*/
+	public String[] discoverPeers(String host, int port)
+	{
 		try {
 			Socket s = new Socket(host, port);
 			DataOutputStream out = new DataOutputStream(s.getOutputStream());
@@ -105,20 +116,23 @@ public class PeerNode implements AsyncCallbacks {
 		}
 		// Shouldn't be reached but to make NetBeans shut the hell up.
 		return null;
-    }
+	}
 
 	@Override
-	public boolean handleWrite(SocketChannel ch, int nr_wrote) {
+	public boolean handleWrite(SocketChannel ch, int nr_wrote)
+	{
 		return false;
 	}
 
-    @Override
-    public boolean handleRead(SocketChannel ch, ByteBuffer buffer, int nread) {
+	@Override
+	public boolean handleRead(SocketChannel ch, ByteBuffer buffer, int nread)
+	{
 		return false;
-    }
+	}
 
-    @Override
-    public boolean handleConnection(SocketChannel ch) {
+	@Override
+	public boolean handleConnection(SocketChannel ch)
+	{
 		return false;
-    }
+	}
 }

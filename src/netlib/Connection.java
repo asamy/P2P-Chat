@@ -26,28 +26,32 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class Connection implements Runnable {
-    private Map rspHandlers = Collections.synchronizedMap(new HashMap());
-    private InetAddress hostAddress;
-    private int port;
-    private Selector selector;
-    private ServerSocketChannel channel;
-    private AsyncCallbacks listener;
-    private List changeRequests = new LinkedList();
-    private Map pendingData = new HashMap();
+public class Connection implements Runnable
+{
+	private Map rspHandlers = Collections.synchronizedMap(new HashMap());
+	private InetAddress hostAddress;
+	private int port;
+	private Selector selector;
+	private ServerSocketChannel channel;
+	private AsyncCallbacks listener;
+	private List changeRequests = new LinkedList();
+	private Map pendingData = new HashMap();
 
-    public Connection(InetAddress hostAddress, int port, AsyncCallbacks listener) throws IOException {
+	public Connection(InetAddress hostAddress, int port, AsyncCallbacks listener) throws IOException
+	{
 		this.hostAddress = hostAddress;
 		this.port = port;
 		this.selector = this.initSelector();
 		this.listener = listener;
-    }
+	}
 
-    private Selector initSelector() throws IOException {
+	private Selector initSelector() throws IOException
+	{
 		return SelectorProvider.provider().openSelector();
-    }
+	}
 
-    private SocketChannel initiateConnection() throws IOException {
+	private SocketChannel initiateConnection() throws IOException
+	{
 		SocketChannel ch = SocketChannel.open();
 		ch.configureBlocking(false);
 
@@ -56,9 +60,10 @@ public class Connection implements Runnable {
 			this.changeRequests.add(new ChangeRequest(ch, ChangeRequest.REGISTER, SelectionKey.OP_CONNECT));
 		}
 		return ch;
-    }
-   
-    public void run() {
+	}
+
+	public void run()
+	{
 		while (true) {
 			try {
 				synchronized(this.changeRequests) {
@@ -98,9 +103,10 @@ public class Connection implements Runnable {
 				e.printStackTrace();
 			}
 		}
-    }
+	}
 
-    private void finishConnection(SelectionKey key) throws IOException {
+	private void finishConnection(SelectionKey key) throws IOException
+	{
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 
 		try {
@@ -115,9 +121,10 @@ public class Connection implements Runnable {
 			socketChannel.close();
 			key.cancel();
 		}
-    }
-    
-    private void read(SelectionKey key) throws IOException {
+	}
+
+	private void read(SelectionKey key) throws IOException
+	{
 		SocketChannel ch = (SocketChannel)key.channel();
 
 		ByteBuffer readBuffer = ByteBuffer.allocate(8192);
@@ -134,9 +141,10 @@ public class Connection implements Runnable {
 			ch.close();
 			key.cancel();
 		}
-    }
-	
-    private void write(SelectionKey key) throws IOException {
+	}
+
+	private void write(SelectionKey key) throws IOException
+	{
 		SocketChannel ch = (SocketChannel) key.channel();
 		int nr_wrote = 0;
 
@@ -159,20 +167,21 @@ public class Connection implements Runnable {
 			ch.close();
 			key.cancel();
 		}
-    }
+	}
 
-    public void send(byte[] data) throws IOException {
+	public void send(byte[] data) throws IOException
+	{
 		SocketChannel socket = this.initiateConnection();
 
 		synchronized (this.pendingData) {
-		  List queue = (List) this.pendingData.get(socket);
-		  if (queue == null) {
-			queue = new ArrayList();
-			this.pendingData.put(socket, queue);
-		  }
-		  queue.add(ByteBuffer.wrap(data));
+			List queue = (List) this.pendingData.get(socket);
+			if (queue == null) {
+				queue = new ArrayList();
+				this.pendingData.put(socket, queue);
+			}
+			queue.add(ByteBuffer.wrap(data));
 		}
 
 		this.selector.wakeup();
-    }
+	}
 }

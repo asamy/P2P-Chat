@@ -25,23 +25,26 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class Server implements Runnable {
-    private InetAddress hostAddress;
-    private int port;
-    private Selector selector;
-    private ServerSocketChannel channel;
-    private AsyncCallbacks listener;
-    private List changeRequests = new LinkedList();
-    private Map pendingData = new HashMap();
+public class Server implements Runnable
+{
+	private InetAddress hostAddress;
+	private int port;
+	private Selector selector;
+	private ServerSocketChannel channel;
+	private AsyncCallbacks listener;
+	private List changeRequests = new LinkedList();
+	private Map pendingData = new HashMap();
 
-    public Server(InetAddress hostAddress, int port, AsyncCallbacks listener) throws IOException {
+	public Server(InetAddress hostAddress, int port, AsyncCallbacks listener) throws IOException
+	{
 		this.hostAddress = hostAddress;
 		this.port = port;
 		this.selector = this.initSelector();
 		this.listener = listener;
-    }
+	}
 
-    private Selector initSelector() throws IOException {
+	private Selector initSelector() throws IOException
+	{
 		Selector s = SelectorProvider.provider().openSelector();
 
 		channel = ServerSocketChannel.open();
@@ -49,9 +52,10 @@ public class Server implements Runnable {
 		channel.socket().bind(new InetSocketAddress(this.hostAddress, this.port));
 		channel.register(s, SelectionKey.OP_ACCEPT);
 		return s;
-    }
+	}
 
-    public void run() {
+	public void run()
+	{
 		while (true) {
 			try {
 				synchronized(this.changeRequests) {
@@ -74,7 +78,7 @@ public class Server implements Runnable {
 					selectedKeys.remove();
 
 					if (!key.isValid())
-					continue;
+						continue;
 
 					if (key.isAcceptable())
 						this.accept(key);
@@ -87,9 +91,10 @@ public class Server implements Runnable {
 				e.printStackTrace();
 			}
 		}
-    }
+	}
 
-    public void accept(SelectionKey key) throws IOException {
+	public void accept(SelectionKey key) throws IOException
+	{
 		ServerSocketChannel ch = (ServerSocketChannel) key.channel();
 		SocketChannel s_ch = ch.accept();
 		if (listener.handleConnection(s_ch)) {
@@ -99,9 +104,10 @@ public class Server implements Runnable {
 			s_ch.close();
 			key.cancel();
 		}
-    }
+	}
 
-    private void read(SelectionKey key) {
+	private void read(SelectionKey key)
+	{
 		SocketChannel ch = (SocketChannel)key.channel();
 
 		ByteBuffer readBuffer = ByteBuffer.allocate(8192);
@@ -128,9 +134,10 @@ public class Server implements Runnable {
 				key.cancel();
 			}
 		}
-    }
-    
-    private void write(SelectionKey key) throws IOException {
+	}
+
+	private void write(SelectionKey key) throws IOException
+	{
 		SocketChannel ch = (SocketChannel) key.channel();
 		int nr_wrote = 0;
 
@@ -148,14 +155,15 @@ public class Server implements Runnable {
 			if (queue.isEmpty())
 				key.interestOps(SelectionKey.OP_READ);
 		}
-		
+
 		if (!listener.handleWrite(ch, nr_wrote)) {
 			ch.close();
 			key.cancel();
 		}
-    }
+	}
 
-    public void send(SocketChannel ch, byte[] data) {
+	public void send(SocketChannel ch, byte[] data)
+	{
 		synchronized(this.changeRequests) {
 			this.changeRequests.add(new ChangeRequest(ch, ChangeRequest.CHANGEOPS, SelectionKey.OP_WRITE));
 			synchronized(this.pendingData) {
@@ -170,9 +178,10 @@ public class Server implements Runnable {
 		}
 
 		this.selector.wakeup();
-    }
+	}
 
-	public void close(SocketChannel ch) {
+	public void close(SocketChannel ch)
+	{
 		try {
 			ch.close();
 		} catch (IOException e) {

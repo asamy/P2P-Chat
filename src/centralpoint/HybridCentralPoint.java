@@ -54,22 +54,26 @@ import java.util.List;
  *  192.168.1.1
  *  138.158.15.69
 */
-public class HybridCentralPoint implements AsyncCallbacks {
-    private Server m_server;
-    private List<InetAddress> m_peerAddresses = new ArrayList<InetAddress>();
+public class HybridCentralPoint implements AsyncCallbacks
+{
+	private Server m_server;
+	private List<InetAddress> m_peerAddresses = new ArrayList<InetAddress>();
 
-	public HybridCentralPoint() throws IOException {
+	public HybridCentralPoint() throws IOException
+	{
 		m_server = new Server(null, 9118, this);
 		new Thread(m_server).start();
 	}
 
 	@Override
-	public boolean handleWrite(SocketChannel ch, int nr_wrote) {
+	public boolean handleWrite(SocketChannel ch, int nr_wrote)
+	{
 		return true;
 	}
 
 	@Override
-	public boolean handleRead(SocketChannel ch, ByteBuffer buf, int nread) {
+	public boolean handleRead(SocketChannel ch, ByteBuffer buf, int nread)
+	{
 		byte[] data = buf.array();
 
 		if (data[0] == 0x1A) {
@@ -86,19 +90,21 @@ public class HybridCentralPoint implements AsyncCallbacks {
 		}
 
 		return false;
-    }
+	}
 
-    @Override
-    public boolean handleConnection(SocketChannel ch) {
+	@Override
+	public boolean handleConnection(SocketChannel ch)
+	{
 		m_peerAddresses.add(ch.socket().getInetAddress());
 		return true;
-    }
+	}
 
-    public static void main(String args[]) {
+	public static void main(String args[])
+	{
 		try {
 			new HybridCentralPoint();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-    }
+	}
 }
