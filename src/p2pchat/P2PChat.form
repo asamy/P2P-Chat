@@ -35,7 +35,7 @@
               </Group>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" attributes="0">
-                  <Component id="findPeersButton" pref="87" max="32767" attributes="0"/>
+                  <Component id="findPeersButton" pref="91" max="32767" attributes="0"/>
                   <Component id="jScrollPane4" pref="0" max="32767" attributes="0"/>
               </Group>
           </Group>
@@ -45,7 +45,7 @@
       <Group type="103" groupAlignment="1" attributes="0">
           <Group type="102" alignment="0" attributes="0">
               <Group type="103" groupAlignment="1" attributes="0">
-                  <Component id="jScrollPane4" pref="273" max="32767" attributes="0"/>
+                  <Component id="jScrollPane4" pref="371" max="32767" attributes="0"/>
                   <Component id="jScrollPane1" alignment="0" max="32767" attributes="0"/>
                   <Component id="jScrollPane3" alignment="0" max="32767" attributes="0"/>
               </Group>
