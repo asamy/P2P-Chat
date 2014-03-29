@@ -46,9 +46,9 @@ import netlib.PeerInfo;
  *		Once a peer has connected to this server, it must send:
  *		0x1A to retrieve the peer list.
  *		The peer list is sent as follows:
- *		Integer - Number of available peers
- *		byte[4] - for each peer address
- *		Integer - Peer port
+ *			Integer - Number of available peers
+ *			byte[4] - for each peer address
+ *			Integer - Peer port
  *
  * So for example:
  *  3
