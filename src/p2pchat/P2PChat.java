@@ -78,93 +78,91 @@ public class P2PChat extends javax.swing.JFrame
 	}
 
 	@SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
-    private void initComponents() {
+	private void initComponents() {
+		jScrollPane1 = new javax.swing.JScrollPane();
+		chatTextArea = new javax.swing.JTextArea();
+		chatTextField = new javax.swing.JTextField();
+		findPeersButton = new javax.swing.JButton();
+		jScrollPane3 = new javax.swing.JScrollPane();
+		chatParticipants = new javax.swing.JList();
+		jScrollPane4 = new javax.swing.JScrollPane();
+		peerList = new javax.swing.JList();
+		sendButton = new javax.swing.JButton();
 
-        jScrollPane1 = new javax.swing.JScrollPane();
-        chatTextArea = new javax.swing.JTextArea();
-        chatTextField = new javax.swing.JTextField();
-        findPeersButton = new javax.swing.JButton();
-        jScrollPane3 = new javax.swing.JScrollPane();
-        chatParticipants = new javax.swing.JList();
-        jScrollPane4 = new javax.swing.JScrollPane();
-        peerList = new javax.swing.JList();
-        sendButton = new javax.swing.JButton();
+		setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+		chatTextArea.setEditable(false);
+		chatTextArea.setColumns(20);
+		chatTextArea.setRows(5);
+		jScrollPane1.setViewportView(chatTextArea);
 
-        chatTextArea.setEditable(false);
-        chatTextArea.setColumns(20);
-        chatTextArea.setRows(5);
-        jScrollPane1.setViewportView(chatTextArea);
+		chatTextField.setText("Type here...");
+		chatTextField.addKeyListener(new java.awt.event.KeyAdapter() {
+			public void keyPressed(java.awt.event.KeyEvent evt) {
+				chatTextFieldKeyPressed(evt);
+			}
+		});
 
-        chatTextField.setText("Type here...");
-        chatTextField.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent evt) {
-                chatTextFieldKeyPressed(evt);
-            }
-        });
+		findPeersButton.setText("Find Peers");
+		findPeersButton.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+				findPeersButtonActionPerformed(evt);
+			}
+		});
 
-        findPeersButton.setText("Find Peers");
-        findPeersButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                findPeersButtonActionPerformed(evt);
-            }
-        });
+		chatParticipants.setModel(chatParticipantsModel);
+		chatParticipants.addMouseListener(new java.awt.event.MouseAdapter() {
+			public void mouseClicked(java.awt.event.MouseEvent evt) {
+				chatParticipantsMouseClicked(evt);
+			}
+		});
+		jScrollPane3.setViewportView(chatParticipants);
 
-        chatParticipants.setModel(chatParticipantsModel);
-        chatParticipants.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                chatParticipantsMouseClicked(evt);
-            }
-        });
-        jScrollPane3.setViewportView(chatParticipants);
+		peerList.setModel(peerListModel);
+		peerList.addMouseListener(new java.awt.event.MouseAdapter() {
+			public void mouseClicked(java.awt.event.MouseEvent evt) {
+				peerListMouseClicked(evt);
+			}
+		});
+		jScrollPane4.setViewportView(peerList);
 
-        peerList.setModel(peerListModel);
-        peerList.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                peerListMouseClicked(evt);
-            }
-        });
-        jScrollPane4.setViewportView(peerList);
+		sendButton.setText("Send");
 
-        sendButton.setText("Send");
+		javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+		getContentPane().setLayout(layout);
+		layout.setHorizontalGroup(
+			layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+			.addGroup(layout.createSequentialGroup()
+				.addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+					.addComponent(chatTextField)
+					.addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 452, Short.MAX_VALUE))
+				.addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+				.addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+					.addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+					.addComponent(sendButton, javax.swing.GroupLayout.DEFAULT_SIZE, 93, Short.MAX_VALUE))
+				.addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+				.addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+					.addComponent(findPeersButton, javax.swing.GroupLayout.DEFAULT_SIZE, 91, Short.MAX_VALUE)
+					.addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)))
+		);
+		layout.setVerticalGroup(
+			layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+			.addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
+				.addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+					.addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 371, Short.MAX_VALUE)
+					.addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.LEADING)
+					.addComponent(jScrollPane3, javax.swing.GroupLayout.Alignment.LEADING))
+				.addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+				.addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+					.addComponent(findPeersButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+					.addComponent(chatTextField)
+					.addComponent(sendButton)))
+		);
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addComponent(chatTextField)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 452, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                    .addComponent(sendButton, javax.swing.GroupLayout.DEFAULT_SIZE, 93, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(findPeersButton, javax.swing.GroupLayout.DEFAULT_SIZE, 91, Short.MAX_VALUE)
-                    .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)))
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 371, Short.MAX_VALUE)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane3, javax.swing.GroupLayout.Alignment.LEADING))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(findPeersButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(chatTextField)
-                    .addComponent(sendButton)))
-        );
+		pack();
+	}
 
-        pack();
-    }// </editor-fold>//GEN-END:initComponents
-
-	private void findPeersButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_findPeersButtonActionPerformed
+	private void findPeersButtonActionPerformed(java.awt.event.ActionEvent evt)
 	{
 		List peers = peer.discoverPeers(centralHost, centralPort);
 		if (peers == null) {
@@ -178,9 +176,9 @@ public class P2PChat extends javax.swing.JFrame
 			PeerInfo info = (PeerInfo) it.next();
 			peerListModel.addElement(info.host + ":" + info.port);
 		}
-	}//GEN-LAST:event_findPeersButtonActionPerformed
+	}
 
-    private void chatTextFieldKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_chatTextFieldKeyPressed
+	private void chatTextFieldKeyPressed(java.awt.event.KeyEvent evt) {
         if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
 			String message = chatTextField.getText();
 			if ("".equals(message))
@@ -190,9 +188,9 @@ public class P2PChat extends javax.swing.JFrame
 			peer.sendMessage(message);
 			chatTextArea.append("<" + peer.peerName + "> " + message + "\n");
 		}
-    }//GEN-LAST:event_chatTextFieldKeyPressed
+	}
 
-    private void peerListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_peerListMouseClicked
+	private void peerListMouseClicked(java.awt.event.MouseEvent evt) {
 		if (evt.getButton() == MouseEvent.BUTTON1) {
 			String peerInfo = (String) peerList.getSelectedValue();
 			if (peerInfo == null)
@@ -208,9 +206,9 @@ public class P2PChat extends javax.swing.JFrame
 				e.printStackTrace();
 			}
 		}
-    }//GEN-LAST:event_peerListMouseClicked
+	}
 
-    private void chatParticipantsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_chatParticipantsMouseClicked
+	private void chatParticipantsMouseClicked(java.awt.event.MouseEvent evt) {
         if (evt.getButton() == MouseEvent.BUTTON2) {
 			JMenu menu = new JMenu("Action...");
 
@@ -228,7 +226,7 @@ public class P2PChat extends javax.swing.JFrame
 			// TODO, more buttons.
 			menu.setVisible(true);
 		}
-    }//GEN-LAST:event_chatParticipantsMouseClicked
+	}
 
 	public void appendText(String sender, String text)
 	{
