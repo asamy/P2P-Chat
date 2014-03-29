@@ -43,17 +43,18 @@ import netlib.PeerInfo;
  * with to retrieve a list of available peers.
  *
  * Few notes on the bytes used:
- *  Once a peer has connected to this server, it must send:
- *	0x1A to retrieve the peer list.
- *  The peer list is sent as follows:
- *	Integer - Number of available peers
- *	byte[4] for each peer address
+ *		Once a peer has connected to this server, it must send:
+ *		0x1A to retrieve the peer list.
+ *		The peer list is sent as follows:
+ *		Integer - Number of available peers
+ *		byte[4] - for each peer address
+ *		Integer - Peer port
  *
  * So for example:
  *  3
- *  127.0.0.1
- *  192.168.1.1
- *  138.158.15.69
+ *  127.0.0.1		-> 9119
+ *  192.168.1.1		-> 4841
+ *  138.158.15.69	-> 5165
 */
 public class HybridCentralPoint implements AsyncCallbacks
 {
