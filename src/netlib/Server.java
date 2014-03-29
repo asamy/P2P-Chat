@@ -17,8 +17,8 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
-import java.util.ArrayList;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -141,6 +141,7 @@ public class Server implements Runnable
 				ByteBuffer buf = (ByteBuffer) queue.get(0);
 				ch.write(buf);
 
+				nr_wrote += buf.remaining();
 				if (buf.remaining() > 0)
 					break;
 				queue.remove(0);
@@ -179,6 +180,7 @@ public class Server implements Runnable
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+
 		ch.keyFor(this.selector).cancel();
 		synchronized(this.changeRequests) {
 			Iterator changes = this.changeRequests.iterator();

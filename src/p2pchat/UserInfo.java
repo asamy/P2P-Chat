@@ -137,7 +137,10 @@ public class UserInfo extends javax.swing.JFrame {
 			return;
 		}
 
-		P2PChat c = new P2PChat(nickField.getText(), hostField.getText(), port);
+		String nick = nickField.getText();
+		if ("".equals(nick))
+			nick = "unnamed";
+		P2PChat c = new P2PChat(nick, hostField.getText(), port);
 
 		int centralp;
 		try {

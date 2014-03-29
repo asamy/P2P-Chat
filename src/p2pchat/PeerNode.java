@@ -62,12 +62,13 @@ public class PeerNode implements AsyncCallbacks
 	}
 
 	@SuppressWarnings("LeakingThisInConstructor")
-	public PeerNode(PeerNode parent, String host, int port) throws IOException
+	public PeerNode(PeerNode parent, String nick, String host, int port) throws IOException
 	{
 		this.parent = parent;
 		this.child  = null;
 		this.conn   = null;
 		this.port   = port;
+		this.peerName = nick;
 
 		this.server = new Server("".equals(host) ? null : InetAddress.getByName(host), port, this);
 		new Thread(this.server).start();
@@ -101,9 +102,9 @@ public class PeerNode implements AsyncCallbacks
 		try {
 			try (Socket s = new Socket(host, port)) {
 				DataOutputStream out = new DataOutputStream(s.getOutputStream());
-				out.writeByte(0x1A);
 				out.writeByte(0x1B);
 				out.writeInt(this.port);
+				out.writeByte(0x1A);
 
 				DataInputStream in = new DataInputStream(s.getInputStream());
 				int nr_peers = in.readInt();
@@ -117,7 +118,7 @@ public class PeerNode implements AsyncCallbacks
 					
 					String peerHost = InetAddress.getByAddress(peerAddress).getHostName();
 					int peerPort = in.readInt();
-					
+
 					PeerInfo info = new PeerInfo();
 					info.port = peerPort;
 					info.host = peerHost;
@@ -129,14 +130,29 @@ public class PeerNode implements AsyncCallbacks
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+			P2PChat.get().centralConnectionFailed();
 		}
 
 		return null;
 	}
 
+	public void kick(String name)
+	{
+		PeerNode node = null;
+		for (node = child; node != null && !name.equals(node.peerName); node = node.child);
+
+		if (node == null) {
+			System.out.println("kick(): Unable to find " + name + "!");
+			return;
+		}
+
+		P2PChat.get().peerDisconnected(node);
+		server.close(node.conn.getChannel());
+	}
+
 	public void setName(String name)
 	{
-		if (name.equals(peerName))
+		if (!name.equals(peerName))
 			sendName(name);
 	}
 
@@ -196,6 +212,7 @@ public class PeerNode implements AsyncCallbacks
 
 				for (PeerNode peer = child; peer != null; peer = peer.child) {
 					if (peer.conn.getChannel() == ch) {
+						P2PChat.get().peerNameChanged(peer, peer.peerName, name);
 						peer.peerName = name;
 						break;
 					}
@@ -223,6 +240,7 @@ public class PeerNode implements AsyncCallbacks
 
 		sendName(null);
 		this.child = peer;
+		P2PChat.get().peerConnected(peer);
 		return true;
 	}
 }
