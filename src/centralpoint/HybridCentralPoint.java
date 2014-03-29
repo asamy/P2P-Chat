@@ -28,8 +28,6 @@ import netlib.Server;
 
 import java.io.IOException;
 
-import java.net.InetAddress;
-
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 

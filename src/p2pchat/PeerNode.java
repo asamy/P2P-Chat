@@ -33,10 +33,8 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import netlib.AsyncCallbacks;
 import netlib.Connection;
@@ -51,26 +49,28 @@ public class PeerNode implements AsyncCallbacks
 	private PeerNode child;
 	private PeerNode parent;
 
+	public String peerName;
 	private int port;
 
 	public PeerNode(PeerNode parent)
 	{
 		this.parent = parent;
-		this.child  = child;
+		this.child  = null;
 
 		this.conn   = null;
 		this.server = null;
 	}
 
-	public PeerNode(PeerNode parent, int port) throws IOException
+	@SuppressWarnings("LeakingThisInConstructor")
+	public PeerNode(PeerNode parent, String host, int port) throws IOException
 	{
 		this.parent = parent;
 		this.child  = null;
 		this.conn   = null;
 		this.port   = port;
 
-		server = new Server(null, port, this);
-		new Thread(server).start();
+		this.server = new Server("".equals(host) ? null : InetAddress.getByName(host), port, this);
+		new Thread(this.server).start();
 	}
 
 	public PeerNode getChild()
@@ -99,39 +99,45 @@ public class PeerNode implements AsyncCallbacks
 	public List discoverPeers(String host, int port)
 	{
 		try {
-			Socket s = new Socket(host, port);
-			DataOutputStream out = new DataOutputStream(s.getOutputStream());
-			out.writeByte(0x1B);
-			out.writeInt(this.port);
-			out.writeByte(0x1A);
+			try (Socket s = new Socket(host, port)) {
+				DataOutputStream out = new DataOutputStream(s.getOutputStream());
+				out.writeByte(0x1A);
+				out.writeByte(0x1B);
+				out.writeInt(this.port);
 
-			DataInputStream in = new DataInputStream(s.getInputStream());
-			int nr_peers = in.readInt();
-			if (nr_peers <= 0)
-				return null;
+				DataInputStream in = new DataInputStream(s.getInputStream());
+				int nr_peers = in.readInt();
+				if (nr_peers <= 0)
+					return null;
 
-			List peers = new LinkedList();
-			for (int i = 0; i < nr_peers; ++i) {
-				byte[] peerAddress = new byte[4];
-				in.read(peerAddress);
+				List peers = new LinkedList();
+				for (int i = 0; i < nr_peers; ++i) {
+					byte[] peerAddress = new byte[4];
+					in.read(peerAddress);
+					
+					String peerHost = InetAddress.getByAddress(peerAddress).getHostName();
+					int peerPort = in.readInt();
+					
+					PeerInfo info = new PeerInfo();
+					info.port = peerPort;
+					info.host = peerHost;
+					
+					peers.add(info);
+				}
 
-				String peerHost = InetAddress.getByAddress(peerAddress).getHostName();
-				int peerPort = in.readInt();
-
-				PeerInfo info = new PeerInfo();
-				info.port = peerPort;
-				info.host = peerHost;
-
-				peers.add(info);
+				return peers;
 			}
-
-			s.close();
-			return peers;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
 		return null;
+	}
+
+	public void setName(String name)
+	{
+		if (name.equals(peerName))
+			sendName(name);
 	}
 
 	public void sendMessage(String message)
@@ -144,6 +150,21 @@ public class PeerNode implements AsyncCallbacks
 			server.send(peer.conn.getChannel(), buffer.array());
 	}
 
+	private void sendName(String newName)
+	{
+		if (newName == null)
+			newName = peerName;
+
+		ByteBuffer buffer = ByteBuffer.allocate(newName.length() + 1);
+		buffer.put((byte)0x1B);
+		buffer.put(newName.getBytes(Charset.forName("UTF-8")));
+
+		for (PeerNode peer = child; peer != null; peer = peer.child)
+			server.send(peer.conn.getChannel(), buffer.array());
+
+		this.peerName = newName;
+	}
+
 	@Override
 	public boolean handleWrite(SocketChannel ch, int nr_wrote)
 	{
@@ -153,26 +174,55 @@ public class PeerNode implements AsyncCallbacks
 	@Override
 	public boolean handleRead(SocketChannel ch, ByteBuffer buffer, int nread)
 	{
-		byte request = buffer.get();
+		while (buffer.hasRemaining()) {
+			byte request = buffer.get();
 
-		if (request == 0x1A) {
-			String str = new String(buffer.array(), Charset.forName("UTF-8"));
-			return true;
+			switch (request) {
+			case 0x1A: {
+				String message = new String(buffer.array(), Charset.forName("UTF-8"));
+				String sender = null;
+
+				for (PeerNode peer = child; peer != null; peer = peer.child) {
+					if (peer.conn.getChannel() == ch) {
+						sender = peer.peerName;
+						break;
+					}
+				}
+
+				P2PChat.get().appendText(sender, message);
+				break;
+			} case 0x1B: {
+				String name = new String(buffer.array(), Charset.forName("UTF-8"));
+
+				for (PeerNode peer = child; peer != null; peer = peer.child) {
+					if (peer.conn.getChannel() == ch) {
+						peer.peerName = name;
+						break;
+					}
+				}
+				break;
+			} default:
+				break;
+			}
 		}
 
-		return false;
+		return true;
 	}
 
 	@Override
 	public boolean handleConnection(SocketChannel ch)
 	{
 		PeerNode peer = new PeerNode(this);
+
 		try {
 			peer.conn = new Connection(ch);
 		} catch (IOException e) {
 			e.printStackTrace();
+			return false;
 		}
 
+		sendName(null);
+		this.child = peer;
 		return true;
 	}
 }

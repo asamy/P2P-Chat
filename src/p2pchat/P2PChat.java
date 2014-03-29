@@ -29,6 +29,7 @@ import java.awt.event.MouseEvent;
 import javax.swing.DefaultListModel;
 
 import java.io.IOException;
+import java.net.InetAddress;
 
 import java.util.Iterator;
 import java.util.List;
@@ -39,21 +40,36 @@ public class P2PChat extends javax.swing.JFrame
 {
 	private PeerNode peer;
 	private DefaultListModel peerListModel;
+	private String centralHost;
+	private int centralPort;
 
-	public P2PChat()
+	private static P2PChat instance;
+
+	@SuppressWarnings("LeakingThisInConstructor")
+	public P2PChat(String nick, String host, int port)
 	{
 		try {
-			peer = new PeerNode(null, 9119);
-			PeerNode p = new PeerNode(null, 9117);
-			p.discoverPeers("localhost", 9118);
+			peer = new PeerNode(null, host, 9119);
+			peer.setName(nick);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
 		peerListModel = new DefaultListModel();
+		instance = this;
 		initComponents();
 	}
 
+	public static P2PChat get()
+	{
+		return instance;
+	}
+
+	public void setCentralInfo(String host, int port)
+	{
+		centralHost = host;
+		centralPort = port;
+	}
 	/**
 	 * This method is called from within the constructor to initialize the form.
 	 * WARNING: Do NOT modify this code. The content of this method is always
@@ -64,7 +80,7 @@ public class P2PChat extends javax.swing.JFrame
     private void initComponents() {
 
         jScrollPane1 = new javax.swing.JScrollPane();
-        chatText = new javax.swing.JTextArea();
+        chatTextArea = new javax.swing.JTextArea();
         chatTextField = new javax.swing.JTextField();
         findPeersButton = new javax.swing.JButton();
         jScrollPane3 = new javax.swing.JScrollPane();
@@ -75,10 +91,10 @@ public class P2PChat extends javax.swing.JFrame
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        chatText.setEditable(false);
-        chatText.setColumns(20);
-        chatText.setRows(5);
-        jScrollPane1.setViewportView(chatText);
+        chatTextArea.setEditable(false);
+        chatTextArea.setColumns(20);
+        chatTextArea.setRows(5);
+        jScrollPane1.setViewportView(chatTextArea);
 
         chatTextField.setText("Type here...");
         chatTextField.addKeyListener(new java.awt.event.KeyAdapter() {
@@ -142,7 +158,7 @@ public class P2PChat extends javax.swing.JFrame
 
 	private void findPeersButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_findPeersButtonActionPerformed
 	{
-		List peers = peer.discoverPeers("localhost", 9118);
+		List peers = peer.discoverPeers(centralHost, centralPort);
 		if (peers == null)
 			return;
 
@@ -159,7 +175,7 @@ public class P2PChat extends javax.swing.JFrame
 			chatTextField.setText("");
 
 			peer.sendMessage(message);
-			chatText.append(message);
+			chatTextArea.append(message);
 		}
     }//GEN-LAST:event_chatTextFieldKeyPressed
 
@@ -172,35 +188,23 @@ public class P2PChat extends javax.swing.JFrame
 			try {
 				peer.connect(peerHost, peerPort);
 			} catch (IOException e) {
-				chatText.append("Unable to connect to: " + peerInfo);
+				chatTextArea.append("Unable to connect to: " + peerInfo);
 				e.printStackTrace();
 			}
 		}
     }//GEN-LAST:event_peerListMouseClicked
 
-	public static void main(String args[])
+	public void appendText(String sender, String text)
 	{
-		try {
-			for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-				if ("Nimbus".equals(info.getName())) {
-					javax.swing.UIManager.setLookAndFeel(info.getClassName());
-					break;
-				}
-			}
-		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
-			         | javax.swing.UnsupportedLookAndFeelException ex) {
-			java.util.logging.Logger.getLogger(P2PChat.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-		}
-		java.awt.EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				new P2PChat().setVisible(true);
-			}
-		});
+		if (sender == null)
+			sender = "<unknown>";
+
+		chatTextArea.append(sender + " " + text);
 	}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JList chatParticipants;
-    private javax.swing.JTextArea chatText;
+    private javax.swing.JTextArea chatTextArea;
     private javax.swing.JTextField chatTextField;
     private javax.swing.JButton findPeersButton;
     private javax.swing.JScrollPane jScrollPane1;
