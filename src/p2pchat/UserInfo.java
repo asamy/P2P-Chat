@@ -29,7 +29,7 @@ public class UserInfo extends javax.swing.JFrame {
 	}
 
 	@SuppressWarnings("unchecked")
-    private void initComponents() {
+	private void initComponents() {
 		jLabel1 = new javax.swing.JLabel();
 		hostField = new javax.swing.JTextField();
 		jLabel2 = new javax.swing.JLabel();
@@ -124,7 +124,7 @@ public class UserInfo extends javax.swing.JFrame {
 		layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {jLabel1, jLabel2, jLabel3});
 
 		pack();
-    }
+	}
 
 	private void startButtonActionPerformed(java.awt.event.ActionEvent evt) {
 		int port;
@@ -173,17 +173,15 @@ public class UserInfo extends javax.swing.JFrame {
 		});
 	}
 
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JTextField centralHost;
-    private javax.swing.JTextField centralPort;
-    private javax.swing.JTextField hostField;
-    private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel4;
-    private javax.swing.JLabel jLabel5;
-    private javax.swing.JTextField nickField;
-    private javax.swing.JTextField portField;
-    private javax.swing.JButton startButton;
-    // End of variables declaration//GEN-END:variables
+	private javax.swing.JTextField centralHost;
+	private javax.swing.JTextField centralPort;
+	private javax.swing.JTextField hostField;
+	private javax.swing.JLabel jLabel1;
+	private javax.swing.JLabel jLabel2;
+	private javax.swing.JLabel jLabel3;
+	private javax.swing.JLabel jLabel4;
+	private javax.swing.JLabel jLabel5;
+	private javax.swing.JTextField nickField;
+	private javax.swing.JTextField portField;
+	private javax.swing.JButton startButton;
 }

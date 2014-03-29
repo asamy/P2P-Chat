@@ -179,7 +179,7 @@ public class P2PChat extends javax.swing.JFrame
 	}
 
 	private void chatTextFieldKeyPressed(java.awt.event.KeyEvent evt) {
-        if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
+		if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
 			String message = chatTextField.getText();
 			if ("".equals(message))
 				return;
@@ -209,7 +209,7 @@ public class P2PChat extends javax.swing.JFrame
 	}
 
 	private void chatParticipantsMouseClicked(java.awt.event.MouseEvent evt) {
-        if (evt.getButton() == MouseEvent.BUTTON2) {
+		if (evt.getButton() == MouseEvent.BUTTON2) {
 			JMenu menu = new JMenu("Action...");
 
 			if (!chatParticipantsModel.isEmpty()) {
@@ -273,15 +273,13 @@ public class P2PChat extends javax.swing.JFrame
 		chatTextArea.append("Unable to establish a connection to the central server.\n");
 	}
 
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JList chatParticipants;
-    private javax.swing.JTextArea chatTextArea;
-    private javax.swing.JTextField chatTextField;
-    private javax.swing.JButton findPeersButton;
-    private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane3;
-    private javax.swing.JScrollPane jScrollPane4;
-    private javax.swing.JList peerList;
-    private javax.swing.JButton sendButton;
-    // End of variables declaration//GEN-END:variables
+	private javax.swing.JList chatParticipants;
+	private javax.swing.JTextArea chatTextArea;
+	private javax.swing.JTextField chatTextField;
+	private javax.swing.JButton findPeersButton;
+	private javax.swing.JScrollPane jScrollPane1;
+	private javax.swing.JScrollPane jScrollPane3;
+	private javax.swing.JScrollPane jScrollPane4;
+	private javax.swing.JList peerList;
+	private javax.swing.JButton sendButton;
 }
