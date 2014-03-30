@@ -23,12 +23,13 @@
  */
 package netlib;
 
-import java.nio.channels.SocketChannel;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 
 public interface AsyncCallbacks
 {
 	public boolean handleWrite(SocketChannel ch, int nr_wrote);
 	public boolean handleRead(SocketChannel ch, ByteBuffer buffer, int nread);
 	public boolean handleConnection(SocketChannel ch);
+	public boolean handleConnectionClose(SocketChannel ch);
 }

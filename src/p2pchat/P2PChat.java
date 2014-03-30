@@ -41,9 +41,10 @@ import netlib.PeerInfo;
 public class P2PChat extends javax.swing.JFrame
 {
 	private PeerNode peer;
-	private DefaultListModel peerListModel, chatParticipantsModel;
+	private final DefaultListModel peerListModel, chatParticipantsModel;
 	private String centralHost;
 	private int centralPort;
+	private static boolean hasAckedSelf = false;
 
 	private static P2PChat instance;
 
@@ -164,6 +165,9 @@ public class P2PChat extends javax.swing.JFrame
 
 	private void findPeersButtonActionPerformed(java.awt.event.ActionEvent evt)
 	{
+		if (!hasAckedSelf)
+			hasAckedSelf = peer.acknowledgeSelf(centralHost, centralPort);
+
 		List peers = peer.discoverPeers(centralHost, centralPort);
 		if (peers == null) {
 			chatTextArea.append("No peers were found.\n");

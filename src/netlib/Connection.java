@@ -10,8 +10,8 @@ import java.io.IOException;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-
 import java.nio.ByteBuffer;
+
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -31,6 +31,7 @@ public class Connection implements Runnable
 	private AsyncCallbacks listener;
 	private List changeRequests = new LinkedList();
 	private List pendingData = new ArrayList();
+	private boolean connected = false;
 
 	public Connection(InetAddress hostAddress, int port, AsyncCallbacks listener) throws IOException
 	{
@@ -41,14 +42,15 @@ public class Connection implements Runnable
 		this.channel = this.initiateConnection();
 	}
 
-	public Connection(SocketChannel ch) throws IOException
+	public Connection(SocketChannel ch, AsyncCallbacks listener) throws IOException
 	{
 		this.selector = initSelector();
 		this.channel = ch;
+		this.listener = listener;
 		ch.configureBlocking(false);
 
-		synchronized(this.changeRequests) {
-			this.changeRequests.add(new ChangeRequest(ch, ChangeRequest.REGISTER, SelectionKey.OP_WRITE));
+		synchronized(changeRequests) {
+			changeRequests.add(new ChangeRequest(ch, ChangeRequest.REGISTER, SelectionKey.OP_WRITE));
 		}
 	}
 
@@ -74,29 +76,34 @@ public class Connection implements Runnable
 		return channel;
 	}
 
+	public boolean isConnected()
+	{
+		return connected;
+	}
+
 	public void run()
 	{
 		while (true) {
 			try {
-				synchronized(this.changeRequests) {
-					Iterator changes = this.changeRequests.iterator();
+				synchronized(changeRequests) {
+					Iterator changes = changeRequests.iterator();
 					while (changes.hasNext()) {
 						ChangeRequest change = (ChangeRequest) changes.next();
 						switch (change.type) {
 						case ChangeRequest.CHANGEOPS:
-							SelectionKey key = change.socket.keyFor(this.selector);
+							SelectionKey key = change.socket.keyFor(selector);
 							key.interestOps(change.ops);
 							break;
 						case ChangeRequest.REGISTER:
-							change.socket.register(this.selector, change.ops);
+							change.socket.register(selector, change.ops);
 							break;
 						}
 					}
-					this.changeRequests.clear();
+					changeRequests.clear();
 				}
-				this.selector.select();
+				selector.select();
 
-				Iterator selectedKeys = this.selector.selectedKeys().iterator();
+				Iterator selectedKeys = selector.selectedKeys().iterator();
 				while (selectedKeys.hasNext()) {
 					SelectionKey  key = (SelectionKey)selectedKeys.next();
 					selectedKeys.remove();
@@ -105,11 +112,11 @@ public class Connection implements Runnable
 						continue;
 
 					if (key.isConnectable())
-						this.finishConnection(key);
+						finishConnection(key);
 					else if (key.isReadable())
-						this.read(key);
+						read(key);
 					else if (key.isWritable())
-						this.write(key);
+						write(key);
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -127,41 +134,40 @@ public class Connection implements Runnable
 		}
 
 		key.interestOps(SelectionKey.OP_WRITE);
-		if (!listener.handleConnection(channel)) {
-			channel.close();
-			key.cancel();
-		}
+		if (listener != null && !listener.handleConnection(channel))
+			close(channel);
+		else
+			connected = true;
 	}
 
 	private void read(SelectionKey key) throws IOException
 	{
-		ByteBuffer readBuffer = ByteBuffer.allocate(1024);
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		int readnr;
 		try {
-			readnr = channel.read(readBuffer);
+			readnr = channel.read(buffer);
 		} catch (IOException e) {
-			key.cancel();
-			channel.close();
+			close(channel);
 			return;
 		}
 
-		readBuffer.flip();
-		if (readnr == -1 || !listener.handleRead(channel, readBuffer, readnr)) {
-			channel.close();
-			key.cancel();
-		}
+		buffer.flip();
+		if (readnr == -1
+			|| (listener != null 
+				&& !listener.handleRead(channel, buffer, readnr)))
+			close(channel);
 	}
 
 	private void write(SelectionKey key) throws IOException
 	{
 		int nr_wrote = 0;
 
-		synchronized(this.pendingData) {
+		synchronized(pendingData) {
 			while (!pendingData.isEmpty()) {
 				ByteBuffer buf = (ByteBuffer) pendingData.get(0);
 				channel.write(buf);
 
-				nr_wrote += buf.remaining();
+				nr_wrote += buf.capacity() - buf.remaining();
 				if (buf.remaining() > 0)
 					break;
 				pendingData.remove(0);
@@ -171,17 +177,39 @@ public class Connection implements Runnable
 				key.interestOps(SelectionKey.OP_READ);
 		}
 
-		if (!listener.handleWrite(channel, nr_wrote)) {
-			channel.close();
-			key.cancel();
-		}
+		if (listener != null && !listener.handleWrite(channel, nr_wrote))
+			close(channel);
 	}
 
 	public void send(byte[] data) throws IOException
 	{
-		synchronized (this.pendingData) {
-			this.pendingData.add(data);
+		synchronized (pendingData) {
+			pendingData.add(ByteBuffer.wrap(data));
 		}
-		this.selector.wakeup();
+		selector.wakeup();
+	}
+
+	public void close(SocketChannel ch)
+	{
+		if (listener != null && !listener.handleConnectionClose(ch))
+			return;
+
+		try {
+			ch.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		ch.keyFor(selector).cancel();
+		synchronized(changeRequests) {
+			Iterator changes = changeRequests.iterator();
+			while (changes.hasNext()) {
+				ChangeRequest req = (ChangeRequest) changes.next();
+				if (req.socket == ch) {
+					changeRequests.remove(req);
+					break;
+				}
+			}
+		}
 	}
 }

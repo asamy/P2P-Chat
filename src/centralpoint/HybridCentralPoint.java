@@ -25,23 +25,23 @@ package centralpoint;
 
 import netlib.AsyncCallbacks;
 import netlib.Server;
+import netlib.PeerInfo;
 
 import java.io.IOException;
-
 import java.nio.ByteBuffer;
+
 import java.nio.channels.SocketChannel;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import netlib.PeerInfo;
-
 /*
  * This class simulates a peer-to-peer hybrid model.
  * However, this is not all of the model, this is just
  * the Central Point for which the peers would communicate
  * with to retrieve a list of available peers.
  *
+ * Every peer has to acknowledge himself to this server.
  * Few notes on the bytes used:
  *		Once a peer has connected to this server, it must send:
  *		1. 0x1A to retrieve the peer list.
@@ -54,7 +54,7 @@ import netlib.PeerInfo;
  *				127.0.0.1		-> 9119
  *				192.168.1.1		-> 4841
  *				138.158.15.69	-> 5165
- *		2. 0x1B to send the port it listens on.
+ *		2. 0x1B to acknowledge self.
  *			Integer - port
 */
 public class HybridCentralPoint implements AsyncCallbacks
@@ -83,18 +83,18 @@ public class HybridCentralPoint implements AsyncCallbacks
 
 				switch (request) {
 				case 0x1A: {
-					ByteBuffer buffer = ByteBuffer.allocate(1024);
-					buffer.putInt(m_peers.size());
+					ByteBuffer out = ByteBuffer.allocate(1024);
+					out.putInt(m_peers.size());
 
 					Iterator it = m_peers.iterator();
 					while (it.hasNext()) {
 						PeerInfo info = (PeerInfo) it.next();
 
-						buffer.put(info.address.getAddress());
-						buffer.putInt(info.port);
+						out.put(info.address.getAddress());
+						out.putInt(info.port);
 					}
 
-					m_server.send(ch, buffer.array());
+					m_server.send(ch, out.array());
 					break;
 				} case 0x1B: {
 					PeerInfo info = new PeerInfo();
@@ -117,6 +117,12 @@ public class HybridCentralPoint implements AsyncCallbacks
 
 	@Override
 	public boolean handleConnection(SocketChannel ch)
+	{
+		return true;
+	}
+
+	@Override
+	public boolean handleConnectionClose(SocketChannel ch)
 	{
 		return true;
 	}

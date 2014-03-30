@@ -43,6 +43,11 @@ public class Server implements Runnable
 		this.listener = listener;
 	}
 
+	public InetAddress getAddress()
+	{
+		return hostAddress;
+	}
+
 	private Selector initSelector() throws IOException
 	{
 		Selector s = SelectorProvider.provider().openSelector();
@@ -51,6 +56,10 @@ public class Server implements Runnable
 		channel.configureBlocking(false);
 		channel.socket().bind(new InetSocketAddress(this.hostAddress, this.port));
 		channel.register(s, SelectionKey.OP_ACCEPT);
+
+		if (hostAddress == null)
+			hostAddress = channel.socket().getInetAddress();
+
 		return s;
 	}
 
@@ -58,21 +67,21 @@ public class Server implements Runnable
 	{
 		while (true) {
 			try {
-				synchronized(this.changeRequests) {
-					Iterator changes = this.changeRequests.iterator();
+				synchronized(changeRequests) {
+					Iterator changes = changeRequests.iterator();
 					while (changes.hasNext()) {
 						ChangeRequest change = (ChangeRequest) changes.next();
 						switch (change.type) {
 						case ChangeRequest.CHANGEOPS:
-							SelectionKey key = change.socket.keyFor(this.selector);
+							SelectionKey key = change.socket.keyFor(selector);
 							key.interestOps(change.ops);
 						}
 					}
-					this.changeRequests.clear();
+					changeRequests.clear();
 				}
-				this.selector.select();
+				selector.select();
 
-				Iterator selectedKeys = this.selector.selectedKeys().iterator();
+				Iterator selectedKeys = selector.selectedKeys().iterator();
 				while (selectedKeys.hasNext()) {
 					SelectionKey  key = (SelectionKey)selectedKeys.next();
 					selectedKeys.remove();
@@ -81,11 +90,11 @@ public class Server implements Runnable
 						continue;
 
 					if (key.isAcceptable())
-						this.accept(key);
+						accept(key);
 					else if (key.isReadable())
-						this.read(key);
+						read(key);
 					else if (key.isWritable())
-						this.write(key);
+						write(key);
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -97,36 +106,31 @@ public class Server implements Runnable
 	{
 		ServerSocketChannel ch = (ServerSocketChannel) key.channel();
 		SocketChannel s_ch = ch.accept();
-		if (listener.handleConnection(s_ch)) {
-			s_ch.configureBlocking(false);
-			s_ch.register(this.selector, SelectionKey.OP_READ);
-		} else {
+
+		s_ch.configureBlocking(false);
+		s_ch.register(selector, SelectionKey.OP_READ);
+		if (!listener.handleConnection(s_ch)) {
 			s_ch.close();
 			key.cancel();
 		}
 	}
 
-	private void read(SelectionKey key)
+	private void read(SelectionKey key) throws IOException
 	{
-		SocketChannel ch = (SocketChannel)key.channel();
+		SocketChannel ch = (SocketChannel) key.channel();
 
-		ByteBuffer readBuffer = ByteBuffer.allocate(8192);
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		int readnr;
 		try {
-			readnr = ch.read(readBuffer);
+			readnr = ch.read(buffer);
 		} catch (IOException e) {
-			try {
-				ch.close();
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			} finally {
-				key.cancel();
-			}
+			close(ch);
 			return;
 		}
 
-		readBuffer.flip();
-		if (readnr == -1 || !listener.handleRead(ch, readBuffer, readnr))
+		buffer.flip();
+		if (readnr == -1
+			|| (listener != null && !listener.handleRead(ch, buffer, readnr)))
 			close(ch);
 	}
 
@@ -135,13 +139,21 @@ public class Server implements Runnable
 		SocketChannel ch = (SocketChannel) key.channel();
 		int nr_wrote = 0;
 
-		synchronized(this.pendingData) {
-			List queue = (List) this.pendingData.get(ch);
+		synchronized(pendingData) {
+			List queue = (List) pendingData.get(ch);
+			/**
+			 * Null exception alert:
+			 *		This can happen once a connection was established.
+			 * Check send() for more information.
+			 */
+			if (queue == null)
+				return;
+
 			while (!queue.isEmpty()) {
 				ByteBuffer buf = (ByteBuffer) queue.get(0);
 				ch.write(buf);
 
-				nr_wrote += buf.remaining();
+				nr_wrote += buf.capacity() - buf.remaining();
 				if (buf.remaining() > 0)
 					break;
 				queue.remove(0);
@@ -157,37 +169,40 @@ public class Server implements Runnable
 
 	public void send(SocketChannel ch, byte[] data)
 	{
-		synchronized(this.changeRequests) {
+		synchronized(changeRequests) {
 			this.changeRequests.add(new ChangeRequest(ch, ChangeRequest.CHANGEOPS, SelectionKey.OP_WRITE));
-			synchronized(this.pendingData) {
-				List queue = (List) this.pendingData.get(ch);
+			synchronized(pendingData) {
+				List queue = (List) pendingData.get(ch);
 				if (queue == null) {
 					queue = new ArrayList();
-					this.pendingData.put(ch, queue);
+					pendingData.put(ch, queue);
 				}
 
 				queue.add(ByteBuffer.wrap(data));
 			}
 		}
 
-		this.selector.wakeup();
+		selector.wakeup();
 	}
 
 	public void close(SocketChannel ch)
 	{
+		if (!listener.handleConnectionClose(ch))
+			return;
+
 		try {
 			ch.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
-		ch.keyFor(this.selector).cancel();
-		synchronized(this.changeRequests) {
-			Iterator changes = this.changeRequests.iterator();
+		ch.keyFor(selector).cancel();
+		synchronized(changeRequests) {
+			Iterator changes = changeRequests.iterator();
 			while (changes.hasNext()) {
 				ChangeRequest req = (ChangeRequest) changes.next();
 				if (req.socket == ch) {
-					this.changeRequests.remove(req);
+					changeRequests.remove(req);
 					break;
 				}
 			}
