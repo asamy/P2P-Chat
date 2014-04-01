@@ -176,7 +176,6 @@ public class Peer implements NetEventListener
 		if (len == 0)
 			return;
 
-		System.out.println("Send message: " + message);
 		send(null, mkbuffer((byte)0x1A, message, len).array());
 	}
 
@@ -227,35 +226,26 @@ public class Peer implements NetEventListener
 
 	private void sendName(Peer node, ByteBuffer out)
 	{
-		if (node == null) {
-			System.out.println("sendName() cannot send name to null peer!");
+		if (node == null)
 			return;
-		}
 
-		System.out.println("Sending name to " + node.peerName);
 		send(node, out.array());
 	}
 
 	private void send(Peer node, byte[] data)
 	{
-		if (conn != null) {
-			System.out.println("sending to connection");
+		if (conn != null)
 			conn.send(data);
-		}
 
 		if (node == null) {
-			System.out.println("Sending to every single peer");
 			// General purpose sending
 			for (Object o : children) {
 				Peer n = (Peer) o;
 				if (server.hasChannel(n.channel))
 					server.send(n.channel, data);
 			}
-		} else {
-			System.out.println("sending to one peer.");
-			if (server.hasChannel(node.channel))
+		} else if (server.hasChannel(node.channel))
 				server.send(node.channel, data);
-		}
 	}
 
 	public boolean handleWrite(SocketChannel ch, int count)
@@ -271,7 +261,6 @@ public class Peer implements NetEventListener
 
 			switch (request) {
 			case 0x1A: {
-				System.out.println("Receive peer message");
 				String message = getString(buffer);
 				String sender = null;
 
@@ -287,7 +276,6 @@ public class Peer implements NetEventListener
 				P2PChat.get().appendText(sender, message);
 				break;
 			} case 0x1B: {
-				System.out.println("Receive peer name");
 				String name = getString(buffer);
 				Iterator it = children.iterator();
 				while (it.hasNext()) {
