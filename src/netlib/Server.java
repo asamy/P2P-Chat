@@ -12,7 +12,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -62,6 +61,11 @@ public class Server implements Runnable
 			hostAddress = channel.socket().getInetAddress();
 
 		return s;
+	}
+
+	public boolean hasChannel(SocketChannel ch)
+	{
+		return ch != null && ch.keyFor(selector) != null;
 	}
 
 	public void run()

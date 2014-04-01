@@ -42,16 +42,6 @@ import netlib.Connection;
 import netlib.PeerInfo;
 import netlib.Server;
 
-/**
- * Peer A:
- *		server open, null connection
- * Peer B:
- *		server open, connection open to A.
- * 
- * Peer A can send but not receive.
- * Peer B can receive but not send!
- */
-
 public class Peer implements NetEventListener
 {
 	private final Server server;
@@ -258,11 +248,13 @@ public class Peer implements NetEventListener
 			// General purpose sending
 			for (Object o : children) {
 				Peer n = (Peer) o;
-				server.send(n.channel, data);
+				if (server.hasChannel(n.channel))
+					server.send(n.channel, data);
 			}
 		} else {
 			System.out.println("sending to one peer.");
-			server.send(node.channel, data);
+			if (server.hasChannel(node.channel))
+				server.send(node.channel, data);
 		}
 	}
 
