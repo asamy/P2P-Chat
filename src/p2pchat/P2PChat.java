@@ -45,7 +45,7 @@ public class P2PChat extends javax.swing.JFrame
 	private final DefaultListModel peerListModel, chatParticipantsModel;
 	private String centralHost;
 	private int centralPort;
-	private static boolean hasAckedSelf = false;
+	private boolean hasAckedSelf;
 
 	private static P2PChat instance;
 
@@ -180,8 +180,21 @@ public class P2PChat extends javax.swing.JFrame
 		if ("".equals(message))
 			return;
 
-		chatTextField.setText("");
+		if (message.charAt(0) == '/') {
+			String[] splitted = message.split(" ");
+			if (splitted[0].equals("/nick") && splitted.length > 1) {
+				// A Nickname can contain spaces
+				String newNick = new String();
+				for (int i = 1; i < splitted.length; ++i)
+					newNick += splitted[i] + " ";
+				peer.setName(newNick);
+				chatTextField.setText("");
+				return;
+			}
+		}
+
 		peer.sendMessage(message);
+		chatTextField.setText("");
 		chatTextArea.append("<" + peer.peerName + "> " + message + "\n");
 	}
 
