@@ -23,9 +23,26 @@
  */
 package p2pchat;
 
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+
 public class UserInfo extends javax.swing.JFrame {
 	public UserInfo() {
 		initComponents();
+		addKeyListener(new KeyListener() {
+			public void keyTyped(KeyEvent e)
+			{
+			}
+			public void keyReleased(KeyEvent e)
+			{				
+			}
+
+			public void keyPressed(KeyEvent e)
+			{
+				if (e.getKeyCode() == KeyEvent.VK_ENTER)
+					showMainWindow();
+			}
+		});
 	}
 
 	@SuppressWarnings("unchecked")
@@ -55,7 +72,7 @@ public class UserInfo extends javax.swing.JFrame {
 		startButton.setText("Start");
 		startButton.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(java.awt.event.ActionEvent evt) {
-				startButtonActionPerformed(evt);
+				showMainWindow();
 			}
 		});
 
@@ -126,7 +143,7 @@ public class UserInfo extends javax.swing.JFrame {
 		pack();
 	}
 
-	private void startButtonActionPerformed(java.awt.event.ActionEvent evt) {
+	private void showMainWindow() {
 		int port;
 		try {
 			port = Integer.parseInt(portField.getText());

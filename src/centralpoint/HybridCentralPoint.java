@@ -23,7 +23,7 @@
  */
 package centralpoint;
 
-import netlib.AsyncCallbacks;
+import netlib.NetEventListener;
 import netlib.Server;
 import netlib.PeerInfo;
 
@@ -57,7 +57,7 @@ import java.util.List;
  *		2. 0x1B to acknowledge self.
  *			Integer - port
 */
-public class HybridCentralPoint implements AsyncCallbacks
+public class HybridCentralPoint implements NetEventListener
 {
 	private Server m_server;
 	private List m_peers = new LinkedList();

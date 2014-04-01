@@ -28,12 +28,12 @@ public class Connection implements Runnable
 	private int port;
 	private Selector selector;
 	private SocketChannel channel;
-	private AsyncCallbacks listener;
+	private NetEventListener listener;
 	private List changeRequests = new LinkedList();
 	private List pendingData = new ArrayList();
 	private boolean connected = false;
 
-	public Connection(InetAddress hostAddress, int port, AsyncCallbacks listener) throws IOException
+	public Connection(InetAddress hostAddress, int port, NetEventListener listener) throws IOException
 	{
 		this.hostAddress = hostAddress;
 		this.port = port;
@@ -42,7 +42,7 @@ public class Connection implements Runnable
 		this.channel = this.initiateConnection();
 	}
 
-	public Connection(SocketChannel ch, AsyncCallbacks listener) throws IOException
+	public Connection(SocketChannel ch, NetEventListener listener) throws IOException
 	{
 		this.selector = initSelector();
 		this.channel = ch;
@@ -143,31 +143,31 @@ public class Connection implements Runnable
 	private void read(SelectionKey key) throws IOException
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		int readnr;
+		int count;
 		try {
-			readnr = channel.read(buffer);
+			count = channel.read(buffer);
 		} catch (IOException e) {
 			close(channel);
 			return;
 		}
 
 		buffer.flip();
-		if (readnr == -1
+		if (count == -1
 			|| (listener != null 
-				&& !listener.handleRead(channel, buffer, readnr)))
+				&& !listener.handleRead(channel, buffer, count)))
 			close(channel);
 	}
 
 	private void write(SelectionKey key) throws IOException
 	{
-		int nr_wrote = 0;
+		int count = 0;
 
 		synchronized(pendingData) {
 			while (!pendingData.isEmpty()) {
 				ByteBuffer buf = (ByteBuffer) pendingData.get(0);
 				channel.write(buf);
 
-				nr_wrote += buf.capacity() - buf.remaining();
+				count += buf.capacity() - buf.remaining();
 				if (buf.remaining() > 0)
 					break;
 				pendingData.remove(0);
@@ -177,14 +177,17 @@ public class Connection implements Runnable
 				key.interestOps(SelectionKey.OP_READ);
 		}
 
-		if (listener != null && !listener.handleWrite(channel, nr_wrote))
+		if (listener != null && !listener.handleWrite(channel, count))
 			close(channel);
 	}
 
-	public void send(byte[] data) throws IOException
+	public void send(byte[] data)
 	{
-		synchronized (pendingData) {
-			pendingData.add(ByteBuffer.wrap(data));
+		synchronized (changeRequests) {
+			changeRequests.add(new ChangeRequest(channel, ChangeRequest.CHANGEOPS, SelectionKey.OP_WRITE));
+			synchronized (pendingData) {
+				pendingData.add(ByteBuffer.wrap(data));
+			}
 		}
 		selector.wakeup();
 	}

@@ -29,49 +29,59 @@ import java.io.IOException;
 
 import java.net.InetAddress;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.Charset;
+
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import netlib.AsyncCallbacks;
+import netlib.NetEventListener;
 import netlib.Connection;
 import netlib.PeerInfo;
 import netlib.Server;
 
-public class PeerNode implements AsyncCallbacks
+/**
+ * Peer A:
+ *		server open, null connection
+ * Peer B:
+ *		server open, connection open to A.
+ * 
+ * Peer A can send but not receive.
+ * Peer B can receive but not send!
+ */
+
+public class Peer implements NetEventListener
 {
-	private Server server;
+	private final Server server;
 	private Connection conn;
+	private SocketChannel channel;
 
 	public String peerName;
 	private int port;
 
-	private List peerList = new LinkedList();
+	private final List children = new LinkedList();
 
-	public PeerNode(PeerNode parent)
+	public Peer(Peer parent)
 	{
-		this.conn   = null;
-		this.server = null;
+		conn   = null;
+		server = null;
 
 		if (parent != null)
-			peerList.add(parent);
+			children.add(parent);
 	}
 
-	@SuppressWarnings("LeakingThisInConstructor")
-	public PeerNode(PeerNode parent, String nick, String host, int port) throws IOException
+	public Peer(Peer parent, String nick, String host, int port) throws IOException
 	{
-		this.conn   = null;
+		conn   = null;
+		peerName = nick;
 		this.port   = port;
-		this.peerName = nick;
 
 		if (parent != null)
-			peerList.add(parent);
+			children.add(parent);
 
-		this.server = new Server("".equals(host) ? null : InetAddress.getByName(host), port, this);
+		server = new Server("".equals(host) ? null : InetAddress.getByName(host), port, this);
 		new Thread(this.server).start();
 	}
 
@@ -154,12 +164,12 @@ public class PeerNode implements AsyncCallbacks
 
 	public void kick(String name)
 	{
-		Iterator it = peerList.iterator();
+		Iterator it = children.iterator();
 		while (it.hasNext()) {
-			PeerNode node = (PeerNode) it.next();
+			Peer node = (Peer) it.next();
 			if (name.equals(node.peerName)) {
 				P2PChat.get().peerDisconnected(node);
-				server.close(node.conn.getChannel());
+				server.close(node.channel);
 			}
 		}
 	}
@@ -176,17 +186,37 @@ public class PeerNode implements AsyncCallbacks
 		if (len == 0)
 			return;
 
-		ByteBuffer out = ByteBuffer.allocate(len * 5);
-		out.put((byte)0x1A);
-		out.putInt(len);
-		for (int i = 0; i < len; ++i)
-			out.putChar(message.charAt(i));
+		System.out.println("Send message: " + message);
+		send(null, mkbuffer((byte)0x1A, message, len).array());
+	}
 
-		Iterator it = peerList.iterator();
-		while (it.hasNext()) {
-			PeerNode node = (PeerNode) it.next();
-			server.send(node.conn.getChannel(), out.array());
-		}
+	private void putString(ByteBuffer buffer, String str, int len)
+	{
+		buffer.putInt(len);
+		for (int i = 0; i < len; ++i)
+			buffer.putChar(str.charAt(i));
+	}
+
+	private String getString(ByteBuffer buffer)
+	{
+		int len = buffer.getInt();
+		if (len == 0)
+			return null;
+
+		char[] data = new char[len];
+		for (int i = 0; i < len; ++i)
+			data[i] = buffer.getChar();
+
+		return new String(data);
+	}
+
+	private ByteBuffer mkbuffer(byte request, String str, int len)
+	{
+		ByteBuffer out = ByteBuffer.allocate((len * 2) + 5);
+		out.put(request);
+		putString(out, str, len);
+
+		return out;
 	}
 
 	private void sendName(String newName)
@@ -198,68 +228,79 @@ public class PeerNode implements AsyncCallbacks
 		if (len == 0)
 			return;
 
-		ByteBuffer out = ByteBuffer.allocate(len * 5);
-		out.put((byte)0x1A);
-		out.putInt(len);
-		for (int i = 0; i < len; ++i)
-			out.putChar(newName.charAt(i));
-
-		Iterator it = peerList.iterator();
-		while (it.hasNext()) {
-			PeerNode node = (PeerNode) it.next();
-			System.out.println("Sending name to " + node.peerName);
-			server.send(node.conn.getChannel(), out.array());
-		}
-
-		this.peerName = newName;
+		ByteBuffer out = mkbuffer((byte)0x1B, newName, len);
+		Iterator it = children.iterator();
+		while (it.hasNext())
+			sendName((Peer)it.next(), out);
+		peerName = newName;
 	}
 
-	@Override
-	public boolean handleWrite(SocketChannel ch, int nr_wrote)
+	private void sendName(Peer node, ByteBuffer out)
 	{
-		System.out.println("handleWrite(): Wrote " + nr_wrote + " bytes.");
+		if (node == null) {
+			System.out.println("sendName() cannot send name to null peer!");
+			return;
+		}
+
+		System.out.println("Sending name to " + node.peerName);
+		send(node, out.array());
+	}
+
+	private void send(Peer node, byte[] data)
+	{
+		if (conn != null) {
+			System.out.println("sending to connection");
+			conn.send(data);
+		}
+
+		if (node == null) {
+			System.out.println("Sending to every single peer");
+			// General purpose sending
+			for (Object o : children) {
+				Peer n = (Peer) o;
+				server.send(n.channel, data);
+			}
+		} else {
+			System.out.println("sending to one peer.");
+			server.send(node.channel, data);
+		}
+	}
+
+	public boolean handleWrite(SocketChannel ch, int count)
+	{
+		System.out.println("handleWrite(): Wrote " + count + " bytes.");
 		return true;
 	}
 
-	@Override
-	public boolean handleRead(SocketChannel ch, ByteBuffer buffer, int nread)
+	public boolean handleRead(SocketChannel ch, ByteBuffer buffer, int count)
 	{
 		while (buffer.hasRemaining()) {
 			byte request = buffer.get();
 
 			switch (request) {
 			case 0x1A: {
-				int len = buffer.getInt();
-				char[] data = new char[len];
-
-				for (int i = 0; i < len; ++i)
-					data[i] = buffer.getChar();
-
+				System.out.println("Receive peer message");
+				String message = getString(buffer);
 				String sender = null;
 
-				Iterator it = peerList.iterator();
+				Iterator it = children.iterator();
 				while (it.hasNext()) {
-					PeerNode node = (PeerNode) it.next();
-					if (node.conn.getChannel() == ch) {
+					Peer node = (Peer) it.next();
+					if (node.channel == ch) {
 						sender = node.peerName;
 						break;
 					}
 				}
 
-				P2PChat.get().appendText(sender, new String(data));
+				P2PChat.get().appendText(sender, message);
 				break;
 			} case 0x1B: {
-				int len = buffer.getInt();
-				char[] data = new char[len];
-
-				for (int i = 0; i < len; ++i)
-					data[i] = buffer.getChar();
-
-				String name = new String(data);
-				Iterator it = peerList.iterator();
+				System.out.println("Receive peer name");
+				String name = getString(buffer);
+				Iterator it = children.iterator();
 				while (it.hasNext()) {
-					PeerNode node = (PeerNode) it.next();
-					if (node.conn.getChannel() == ch) {
+					Peer node = (Peer) it.next();
+					if (node.channel == ch) {
 						P2PChat.get().peerNameChanged(node, node.peerName, name);
 						node.peerName = name;
 						break;
@@ -274,34 +315,30 @@ public class PeerNode implements AsyncCallbacks
 		return true;
 	}
 
-	@Override
 	public boolean handleConnection(SocketChannel ch)
 	{
-		PeerNode peer = new PeerNode(this);
-		peerList.add(peer);
+		Peer peer = new Peer(this);
+		children.add(peer);
 
-		try {
-			peer.conn = new Connection(ch, null);
-		} catch (IOException e) {
-			e.printStackTrace();
-			return false;
-		}
-
-		sendName(null);
+		peer.channel = ch;
+		sendName(peer, mkbuffer((byte)0x1B, peerName, peerName.length()));
 		P2PChat.get().peerConnected(peer);
 		return true;
 	}
 
-	@Override
 	public boolean handleConnectionClose(SocketChannel ch)
 	{
-		Iterator it = peerList.iterator();
+		Iterator it = children.iterator();
 		while (it.hasNext()) {
-			PeerNode node = (PeerNode) it.next();
-			if (node.conn.getChannel() == ch)
+			Peer node = (Peer) it.next();
+			if (node.channel == ch) {
 				P2PChat.get().peerDisconnected(node);
+				children.remove(node);
+				break;
+			}
 		}
 
+		P2PChat.get().appendText("Network", "Unable to find disconnected peer!");
 		return true;
 	}
 }

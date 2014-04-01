@@ -26,10 +26,10 @@ package netlib;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-public interface AsyncCallbacks
+public interface NetEventListener
 {
-	public boolean handleWrite(SocketChannel ch, int nr_wrote);
-	public boolean handleRead(SocketChannel ch, ByteBuffer buffer, int nread);
+	public boolean handleWrite(SocketChannel ch, int count);
+	public boolean handleRead(SocketChannel ch, ByteBuffer buffer, int count);
 	public boolean handleConnection(SocketChannel ch);
 	public boolean handleConnectionClose(SocketChannel ch);
 }

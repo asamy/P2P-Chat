@@ -12,6 +12,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -31,11 +32,11 @@ public class Server implements Runnable
 	private int port;
 	private Selector selector;
 	private ServerSocketChannel channel;
-	private AsyncCallbacks listener;
+	private NetEventListener listener;
 	private List changeRequests = new LinkedList();
 	private Map pendingData = new HashMap();
 
-	public Server(InetAddress hostAddress, int port, AsyncCallbacks listener) throws IOException
+	public Server(InetAddress hostAddress, int port, NetEventListener listener) throws IOException
 	{
 		this.hostAddress = hostAddress;
 		this.port = port;
@@ -120,17 +121,17 @@ public class Server implements Runnable
 		SocketChannel ch = (SocketChannel) key.channel();
 
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		int readnr;
+		int count;
 		try {
-			readnr = ch.read(buffer);
+			count = ch.read(buffer);
 		} catch (IOException e) {
 			close(ch);
 			return;
 		}
 
 		buffer.flip();
-		if (readnr == -1
-			|| (listener != null && !listener.handleRead(ch, buffer, readnr)))
+		if (count == -1
+			|| (listener != null && !listener.handleRead(ch, buffer, count)))
 			close(ch);
 	}
 
@@ -170,7 +171,7 @@ public class Server implements Runnable
 	public void send(SocketChannel ch, byte[] data)
 	{
 		synchronized(changeRequests) {
-			this.changeRequests.add(new ChangeRequest(ch, ChangeRequest.CHANGEOPS, SelectionKey.OP_WRITE));
+			changeRequests.add(new ChangeRequest(ch, ChangeRequest.CHANGEOPS, SelectionKey.OP_WRITE));
 			synchronized(pendingData) {
 				List queue = (List) pendingData.get(ch);
 				if (queue == null) {

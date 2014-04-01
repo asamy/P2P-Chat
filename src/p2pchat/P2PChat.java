@@ -23,6 +23,7 @@
  */
 package p2pchat;
 
+import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 
@@ -40,7 +41,7 @@ import netlib.PeerInfo;
 
 public class P2PChat extends javax.swing.JFrame
 {
-	private PeerNode peer;
+	private Peer peer;
 	private final DefaultListModel peerListModel, chatParticipantsModel;
 	private String centralHost;
 	private int centralPort;
@@ -52,7 +53,7 @@ public class P2PChat extends javax.swing.JFrame
 	public P2PChat(String nick, String host, int port)
 	{
 		try {
-			peer = new PeerNode(null, nick, host, port);
+			peer = new Peer(null, nick, host, port);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -65,6 +66,8 @@ public class P2PChat extends javax.swing.JFrame
 
 		DefaultCaret caret = (DefaultCaret)chatTextArea.getCaret();
 		caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+
+		chatTextArea.setLineWrap(true);
 	}
 
 	public static P2PChat get()
@@ -76,6 +79,8 @@ public class P2PChat extends javax.swing.JFrame
 	{
 		centralHost = host;
 		centralPort = port;
+
+		hasAckedSelf = peer.acknowledgeSelf(host, port);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -100,7 +105,8 @@ public class P2PChat extends javax.swing.JFrame
 		chatTextField.setText("Type here...");
 		chatTextField.addKeyListener(new java.awt.event.KeyAdapter() {
 			public void keyPressed(java.awt.event.KeyEvent evt) {
-				chatTextFieldKeyPressed(evt);
+				if (evt.getKeyCode() == KeyEvent.VK_ENTER)
+					sendTextMessage();
 			}
 		});
 
@@ -128,6 +134,11 @@ public class P2PChat extends javax.swing.JFrame
 		jScrollPane4.setViewportView(peerList);
 
 		sendButton.setText("Send");
+		sendButton.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				sendTextMessage();
+			}
+		});
 
 		javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
 		getContentPane().setLayout(layout);
@@ -163,6 +174,17 @@ public class P2PChat extends javax.swing.JFrame
 		pack();
 	}
 
+	private void sendTextMessage()
+	{
+		String message = chatTextField.getText();
+		if ("".equals(message))
+			return;
+
+		chatTextField.setText("");
+		peer.sendMessage(message);
+		chatTextArea.append("<" + peer.peerName + "> " + message + "\n");
+	}
+
 	private void findPeersButtonActionPerformed(java.awt.event.ActionEvent evt)
 	{
 		if (!hasAckedSelf)
@@ -179,18 +201,6 @@ public class P2PChat extends javax.swing.JFrame
 		while (it.hasNext()) {
 			PeerInfo info = (PeerInfo) it.next();
 			peerListModel.addElement(info.host + ":" + info.port);
-		}
-	}
-
-	private void chatTextFieldKeyPressed(java.awt.event.KeyEvent evt) {
-		if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
-			String message = chatTextField.getText();
-			if ("".equals(message))
-				return;
-
-			chatTextField.setText("");
-			peer.sendMessage(message);
-			chatTextArea.append("<" + peer.peerName + "> " + message + "\n");
 		}
 	}
 
@@ -240,7 +250,7 @@ public class P2PChat extends javax.swing.JFrame
 		chatTextArea.append("<" + sender + "> " + text + "\n");
 	}
 
-	public void peerConnected(PeerNode newPeer)
+	public void peerConnected(Peer newPeer)
 	{
 		if (newPeer.peerName == null)
 			newPeer.peerName = "unnamed";
@@ -249,7 +259,7 @@ public class P2PChat extends javax.swing.JFrame
 		chatParticipantsModel.addElement(newPeer.peerName);
 	}
 
-	public void peerDisconnected(PeerNode node)
+	public void peerDisconnected(Peer node)
 	{
 		node.sendMessage("You were kicked.");
 
@@ -260,11 +270,11 @@ public class P2PChat extends javax.swing.JFrame
 		chatTextArea.append(node.peerName + " was kicked from this chat.\n");
 	}
 
-	public void peerNameChanged(PeerNode node, String oldName, String newName)
+	public void peerNameChanged(Peer node, String oldName, String newName)
 	{
 		int index = chatParticipantsModel.indexOf(oldName);
 		if (index != -1) {
-			chatParticipantsModel.insertElementAt(newName, index);
+			chatParticipantsModel.setElementAt(newName, index);
 			chatTextArea.append(oldName + " has changed name to " + newName + "\n");
 		} else {
 			System.out.println("Unable to find peer name " + oldName + " (" + newName + ")");
