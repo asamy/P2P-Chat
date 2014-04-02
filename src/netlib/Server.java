@@ -29,11 +29,13 @@ public class Server implements Runnable
 {
 	private InetAddress hostAddress;
 	private int port;
+
 	private Selector selector;
 	private ServerSocketChannel channel;
 	private NetEventListener listener;
-	private List changeRequests = new LinkedList();
-	private Map pendingData = new HashMap();
+
+	private final List changeRequests = new LinkedList();
+	private final Map pendingData = new HashMap();
 
 	public Server(InetAddress hostAddress, int port, NetEventListener listener) throws IOException
 	{

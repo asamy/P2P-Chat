@@ -203,18 +203,6 @@ public class P2PChat extends javax.swing.JFrame
 					return;
 				}
 
-				if (peer.isConnected()) {
-					int confirm = JOptionPane.showConfirmDialog(null,
-						"You're already connected to someone else.  Connecting to " +
-						" another host will disconnect you from the first one." +
-						"Continue?"
-					);
-
-					if (confirm != JOptionPane.NO_OPTION && confirm != JOptionPane.CANCEL_OPTION)
-						return;
-				}
-
-				peer.disconnect();
 				try {
 					peer.connect(hostName, port);
 				} catch (IOException ex) {
@@ -344,6 +332,14 @@ public class P2PChat extends javax.swing.JFrame
 		} else {
 			System.out.println("Unable to find peer name " + oldName + " (" + newName + ")");
 			chatParticipantsModel.addElement(newName);
+		}
+	}
+
+	public void peerFound(String hostName, int port)
+	{
+		if (!peerListModel.contains(hostName + ":" + port)) {
+			chatTextArea.append("New peer found: " + hostName + ":" + port + "\n");
+			peerListModel.addElement(hostName + ":" + port);
 		}
 	}
 

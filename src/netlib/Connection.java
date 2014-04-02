@@ -26,11 +26,14 @@ public class Connection implements Runnable
 {
 	private InetAddress hostAddress;
 	private int port;
+
 	private Selector selector;
 	private SocketChannel channel;
 	private NetEventListener listener;
-	private List changeRequests = new LinkedList();
-	private List pendingData = new ArrayList();
+
+	private final List changeRequests = new LinkedList();
+	private final List pendingData = new ArrayList();
+
 	private boolean connected = false;
 
 	public Connection(InetAddress hostAddress, int port, NetEventListener listener) throws IOException

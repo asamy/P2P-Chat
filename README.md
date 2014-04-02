@@ -16,4 +16,4 @@ find a better way to do that in the near future.
 
 ## Contributions
 
-Either send me an e-mail (<f.fallen45@gmail.com>) or do a pull request on GitHub.
+Either send me an e-mail (<f.fallen45@gmail.com>) and attach your patch or do a pull request on GitHub.
