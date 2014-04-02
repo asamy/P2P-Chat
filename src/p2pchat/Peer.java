@@ -80,7 +80,7 @@ public class Peer implements NetEventListener
 		connections.add(conn);
 	}
 
-	public boolean acknowledgeSelf(String host, int port)
+	public boolean publishSelf(String host, int port)
 	{
 		try {
 			try (Socket s = new Socket(host, port)) {

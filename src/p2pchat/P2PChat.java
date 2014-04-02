@@ -47,7 +47,7 @@ public class P2PChat extends javax.swing.JFrame
 	private final DefaultListModel peerListModel, chatParticipantsModel;
 	private String centralHost;
 	private int centralPort;
-	private boolean hasAckedSelf;
+	private boolean hasPublishedSelf;
 
 	private static P2PChat instance;
 
@@ -82,7 +82,7 @@ public class P2PChat extends javax.swing.JFrame
 		centralHost = host;
 		centralPort = port;
 
-		hasAckedSelf = peer.acknowledgeSelf(host, port);
+		hasPublishedSelf = peer.publishSelf(host, port);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -251,8 +251,8 @@ public class P2PChat extends javax.swing.JFrame
 
 	private void findPeersButtonActionPerformed(java.awt.event.ActionEvent evt)
 	{
-		if (!hasAckedSelf)
-			hasAckedSelf = peer.acknowledgeSelf(centralHost, centralPort);
+		if (!hasPublishedSelf)
+			hasPublishedSelf = peer.publishSelf(centralHost, centralPort);
 
 		List peers = peer.discoverPeers(centralHost, centralPort);
 		if (peers == null) {
