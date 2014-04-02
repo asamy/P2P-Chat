@@ -28,6 +28,7 @@ import netlib.Server;
 import netlib.PeerInfo;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 
 import java.nio.channels.SocketChannel;
@@ -100,6 +101,13 @@ public class HybridCentralPoint implements NetEventListener
 					PeerInfo info = new PeerInfo();
 					info.port = buf.getInt();
 					info.address = ch.socket().getInetAddress();
+
+					Iterator it = m_peers.iterator();
+					while (it.hasNext()) {
+						PeerInfo i = (PeerInfo) it.next();
+						if (i.port == info.port && i.address.equals(info.address))
+							return false;
+					}
 
 					m_peers.add(info);
 					break;

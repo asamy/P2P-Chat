@@ -135,7 +135,7 @@ public class Connection implements Runnable
 
 		key.interestOps(SelectionKey.OP_WRITE);
 		if (listener != null && !listener.handleConnection(channel))
-			close(channel);
+			disconnect();
 		else
 			connected = true;
 	}
@@ -147,7 +147,7 @@ public class Connection implements Runnable
 		try {
 			count = channel.read(buffer);
 		} catch (IOException e) {
-			close(channel);
+			disconnect();
 			return;
 		}
 
@@ -155,7 +155,7 @@ public class Connection implements Runnable
 		if (count == -1
 			|| (listener != null 
 				&& !listener.handleRead(channel, buffer, count)))
-			close(channel);
+			disconnect();
 	}
 
 	private void write(SelectionKey key) throws IOException
@@ -178,7 +178,7 @@ public class Connection implements Runnable
 		}
 
 		if (listener != null && !listener.handleWrite(channel, count))
-			close(channel);
+			disconnect();
 	}
 
 	public void send(byte[] data)
@@ -192,23 +192,23 @@ public class Connection implements Runnable
 		selector.wakeup();
 	}
 
-	public void close(SocketChannel ch)
+	public void disconnect()
 	{
-		if (listener != null && !listener.handleConnectionClose(ch))
+		if (listener != null && !listener.handleConnectionClose(channel))
 			return;
 
 		try {
-			ch.close();
+			channel.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
-		ch.keyFor(selector).cancel();
+		channel.keyFor(selector).cancel();
 		synchronized(changeRequests) {
 			Iterator changes = changeRequests.iterator();
 			while (changes.hasNext()) {
 				ChangeRequest req = (ChangeRequest) changes.next();
-				if (req.socket == ch) {
+				if (req.socket == channel) {
 					changeRequests.remove(req);
 					break;
 				}
