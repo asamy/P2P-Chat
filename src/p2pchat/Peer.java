@@ -45,31 +45,29 @@ import netlib.Server;
 public class Peer implements NetEventListener
 {
 	private final Server server;
-	private Connection conn;
-	private SocketChannel channel;
+	private SocketChannel channel;	/* To identify other peers, not current.  */
 
 	public String peerName;
 	private int port;
 
 	private final List children = new LinkedList();
+	private final List connections = new LinkedList();
 
-	public Peer(Peer parent)
+	public Peer(Peer peer)
 	{
-		conn   = null;
 		server = null;
 
-		if (parent != null)
-			children.add(parent);
+		if (peer != null)
+			children.add(peer);
 	}
 
-	public Peer(Peer parent, String nick, String host, int port) throws IOException
+	public Peer(Peer peer, String nick, String host, int port) throws IOException
 	{
-		conn   = null;
 		peerName = nick;
 		this.port   = port;
 
-		if (parent != null)
-			children.add(parent);
+		if (peer != null)
+			children.add(peer);
 
 		server = new Server("".equals(host) ? null : InetAddress.getByName(host), port, this);
 		new Thread(this.server).start();
@@ -77,11 +75,9 @@ public class Peer implements NetEventListener
 
 	public void connect(String host, int port) throws IOException
 	{
-		if (conn != null && conn.isConnected())
-			return;
-
-		conn = new Connection(InetAddress.getByName(host), port, this);
+		Connection conn = new Connection(InetAddress.getByName(host), port, this);
 		new Thread(conn).start();
+		connections.add(conn);
 	}
 
 	public boolean acknowledgeSelf(String host, int port)
@@ -156,10 +152,18 @@ public class Peer implements NetEventListener
 	{
 		Iterator it = children.iterator();
 		while (it.hasNext()) {
-			Peer node = (Peer) it.next();
-			if (name.equals(node.peerName)) {
-				P2PChat.get().peerDisconnected(node);
-				server.close(node.channel);
+			Peer peer = (Peer) it.next();
+			if (name.equals(peer.peerName)) {
+				P2PChat.get().peerDisconnected(peer);
+				if (channel != peer.channel) {
+					server.close(peer.channel);
+				} else {
+					Connection c = findConnection(peer.channel);
+					if (c != null) {
+						c.disconnect();
+						P2PChat.get().appendText("Network", "You kicked yourself.");
+					}
+				}
 			}
 		}
 	}
@@ -224,28 +228,79 @@ public class Peer implements NetEventListener
 		peerName = newName;
 	}
 
-	private void sendName(Peer node, ByteBuffer out)
+	private void sendName(Peer peer, ByteBuffer out)
 	{
-		if (node == null)
+		if (peer == null)
 			return;
 
-		send(node, out.array());
+		send(peer, out.array());
 	}
 
-	private void send(Peer node, byte[] data)
+	private void sendPeers(Peer peer)
 	{
-		if (conn != null)
-			conn.send(data);
+		// What we basically do here is that we send every single peer
+		// that is connected to us or we're connected to, to that peer.
 
-		if (node == null) {
-			// General purpose sending
-			for (Object o : children) {
-				Peer n = (Peer) o;
-				if (server.hasChannel(n.channel))
-					server.send(n.channel, data);
+		Connection conn = findConnection(peer.channel);
+		for (Object obj : children) {
+			Peer p = (Peer) obj;
+			if (p.port != 0) {
+				ByteBuffer buffer = ByteBuffer.allocate(4096);
+				buffer.put((byte)0x1D);
+
+				String hostName = peer.channel.socket().getInetAddress().getHostAddress();
+				putString(buffer, hostName, hostName.length());
+				buffer.putInt(peer.port);
+
+				byte[] peerData = buffer.array();
+				if (conn != null)
+					conn.send(peerData);
+				else if (server.hasChannel(peer.channel))
+					server.send(peer.channel, peerData);
 			}
-		} else if (server.hasChannel(node.channel))
-				server.send(node.channel, data);
+		}
+	}
+
+	private void sendPort(Peer peer)
+	{
+		// I know this is kind of a waste, but we have to use ByteBuffer
+		// to take care of the byte order.  Could of just packed the port
+		// into a byte array.
+		ByteBuffer buffer = ByteBuffer.allocate(5);
+		buffer.put((byte)0x1C);
+		buffer.putInt(port);
+
+		Connection conn = findConnection(peer.channel);
+		if (conn != null)
+			conn.send(buffer.array());
+		else if (server.hasChannel(peer.channel))
+			server.send(peer.channel, buffer.array());
+	}
+
+	private void send(Peer peer, byte[] data)
+	{
+		for (Object obj : connections)
+			((Connection) obj).send(data);
+
+		if (peer == null) {
+			for (Object o : children) {
+				Peer p = (Peer) o;
+				if (server.hasChannel(p.channel))
+					server.send(p.channel, data);
+			}
+		} else if (server.hasChannel(peer.channel))
+			server.send(peer.channel, data);
+	}
+
+	private Connection findConnection(SocketChannel ch)
+	{
+		for (Object obj : connections) {
+			Connection c = (Connection) obj;
+			if (c.getChannel() == ch)
+				return c;
+		}
+
+		return null;
 	}
 
 	public boolean handleWrite(SocketChannel ch, int count)
@@ -260,32 +315,50 @@ public class Peer implements NetEventListener
 			byte request = buffer.get();
 
 			switch (request) {
-			case 0x1A: {
+			case 0x1A: {	// message received
 				String message = getString(buffer);
 				String sender = null;
 
 				Iterator it = children.iterator();
 				while (it.hasNext()) {
-					Peer node = (Peer) it.next();
-					if (node.channel == ch) {
-						sender = node.peerName;
+					Peer peer = (Peer) it.next();
+					if (peer.channel == ch) {
+						sender = peer.peerName;
 						break;
 					}
 				}
 
 				P2PChat.get().appendText(sender, message);
 				break;
-			} case 0x1B: {
+			} case 0x1B: {	// nickname changed
 				String name = getString(buffer);
 				Iterator it = children.iterator();
 				while (it.hasNext()) {
-					Peer node = (Peer) it.next();
-					if (node.channel == ch) {
-						P2PChat.get().peerNameChanged(node, node.peerName, name);
-						node.peerName = name;
+					Peer peer = (Peer) it.next();
+					if (peer.channel == ch) {
+						P2PChat.get().peerNameChanged(peer, peer.peerName, name);
+						peer.peerName = name;
 						break;
 					}
 				}
+				break;
+			} case 0x1C: {	// Acknowledge port
+				int port = buffer.getInt();
+				Iterator it = children.iterator();
+				while (it.hasNext()) {
+					Peer peer = (Peer) it.next();
+					if (peer.channel == ch) {
+						peer.port = port;
+						break;
+					}
+				}
+				break;
+			} case 0x1D: {
+				// A peer sending us another peer he's connected to.
+				String hostName = getString(buffer);
+				int port = buffer.getInt();
+
+				P2PChat.get().peerFound(hostName, port);
 				break;
 			} default:
 				break;
@@ -301,7 +374,12 @@ public class Peer implements NetEventListener
 		children.add(peer);
 
 		peer.channel = ch;
+		peer.port    = port;
+
 		sendName(peer, mkbuffer((byte)0x1B, peerName, peerName.length()));
+		sendPort(peer);
+		sendPeers(peer);
+
 		P2PChat.get().peerConnected(peer);
 		return true;
 	}
@@ -310,11 +388,11 @@ public class Peer implements NetEventListener
 	{
 		Iterator it = children.iterator();
 		while (it.hasNext()) {
-			Peer node = (Peer) it.next();
-			if (node.channel == ch) {
-				P2PChat.get().peerDisconnected(node);
-				children.remove(node);
-				break;
+			Peer peer = (Peer) it.next();
+			if (peer.channel == ch) {
+				P2PChat.get().peerDisconnected(peer);
+				children.remove(peer);
+				return true;
 			}
 		}
 
