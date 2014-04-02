@@ -25,17 +25,19 @@ package p2pchat;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
-import java.awt.event.MouseEvent;
-
-import javax.swing.DefaultListModel;
 
 import java.io.IOException;
 
 import java.util.Iterator;
 import java.util.List;
 
-import javax.swing.JMenu;
+import javax.swing.SwingUtilities;
 import javax.swing.text.DefaultCaret;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
 
 import netlib.PeerInfo;
 
@@ -122,6 +124,10 @@ public class P2PChat extends javax.swing.JFrame
 			public void mouseClicked(java.awt.event.MouseEvent evt) {
 				chatParticipantsMouseClicked(evt);
 			}
+			public void mouseReleased(java.awt.event.MouseEvent evt) {
+				if (evt.isPopupTrigger())
+					chatParticipantsPopup.show(evt.getComponent(), evt.getX(), evt.getY());
+			}
 		});
 		jScrollPane3.setViewportView(chatParticipants);
 
@@ -129,6 +135,10 @@ public class P2PChat extends javax.swing.JFrame
 		peerList.addMouseListener(new java.awt.event.MouseAdapter() {
 			public void mouseClicked(java.awt.event.MouseEvent evt) {
 				peerListMouseClicked(evt);
+			}
+			public void mouseReleased(java.awt.event.MouseEvent evt) {
+				if (evt.isPopupTrigger())
+					peerListPopup.show(evt.getComponent(), evt.getX(), evt.getY());
 			}
 		});
 		jScrollPane4.setViewportView(peerList);
@@ -170,6 +180,59 @@ public class P2PChat extends javax.swing.JFrame
 					.addComponent(chatTextField)
 					.addComponent(sendButton)))
 		);
+
+		peerListPopup = new JPopupMenu("Action...");
+		JMenuItem buttonDisconnect = new JMenuItem("Disconnect");
+		buttonDisconnect.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				// TODO
+			}
+		});
+
+		JMenuItem buttonConnect = new JMenuItem("Connect");
+		buttonConnect.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String hostName = JOptionPane.showInputDialog("Hostname/IP:");
+				String portName = JOptionPane.showInputDialog("Port:");
+
+				int port;
+				try {
+					port = Integer.parseInt(portName);
+				} catch (NumberFormatException ex) {
+					JOptionPane.showMessageDialog(null, "Invalid port name " + portName + "!");
+					return;
+				}
+
+				if (peer.isConnected()) {
+					int confirm = JOptionPane.showConfirmDialog(null,
+						"You're already connected to someone else.  Connecting to " +
+						" another host will disconnect you from the first one." +
+						"Continue?"
+					);
+
+					if (confirm != JOptionPane.NO_OPTION && confirm != JOptionPane.CANCEL_OPTION)
+						return;
+				}
+
+				peer.disconnect();
+				try {
+					peer.connect(hostName, port);
+				} catch (IOException ex) {
+					JOptionPane.showMessageDialog(null, "Unable to establish a connection to " + hostName + ":" + portName + "!");
+				}
+			}
+		});
+		peerListPopup.add(buttonDisconnect);
+		peerListPopup.add(buttonConnect);
+
+		chatParticipantsPopup = new JPopupMenu("Action...");
+		JMenuItem buttonKick = new JMenuItem("Kick");
+		buttonKick.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+				peer.kick((String) chatParticipants.getSelectedValue());
+			}
+		});
+		chatParticipantsPopup.add(buttonKick);
 
 		pack();
 	}
@@ -217,14 +280,16 @@ public class P2PChat extends javax.swing.JFrame
 		}
 	}
 
-	private void peerListMouseClicked(java.awt.event.MouseEvent evt) {
-		if (evt.getButton() == MouseEvent.BUTTON1) {
+	private void peerListMouseClicked(java.awt.event.MouseEvent evt)
+	{
+		if (SwingUtilities.isLeftMouseButton(evt)) {
 			String peerInfo = (String) peerList.getSelectedValue();
 			if (peerInfo == null)
 				return;
 
-			String peerHost = peerInfo.substring(0, peerInfo.indexOf(":"));
-			int peerPort = Integer.parseInt(peerInfo.substring(peerInfo.indexOf(":")+1, peerInfo.length()));
+			int sep = peerInfo.indexOf(":");
+			String peerHost = peerInfo.substring(0, sep);
+			int peerPort = Integer.parseInt(peerInfo.substring(sep + 1, peerInfo.length()));
 
 			try {
 				peer.connect(peerHost, peerPort);
@@ -232,27 +297,14 @@ public class P2PChat extends javax.swing.JFrame
 				chatTextArea.append("Unable to connect to: " + peerInfo + "\n");
 				e.printStackTrace();
 			}
-		}
+		} else if (evt.isPopupTrigger())
+			peerListPopup.show(evt.getComponent(), evt.getX(), evt.getY());
 	}
 
-	private void chatParticipantsMouseClicked(java.awt.event.MouseEvent evt) {
-		if (evt.getButton() == MouseEvent.BUTTON2) {
-			JMenu menu = new JMenu("Action...");
-
-			if (!chatParticipantsModel.isEmpty()) {
-				javax.swing.JButton buttonKick = new javax.swing.JButton("Kick");
-				buttonKick.addActionListener(new java.awt.event.ActionListener() {
-					public void actionPerformed(java.awt.event.ActionEvent evt) {
-						peer.kick((String) chatParticipants.getSelectedValue());
-					}
-				});
-
-				menu.add(buttonKick);
-			}
-
-			// TODO, more buttons.
-			menu.setVisible(true);
-		}
+	private void chatParticipantsMouseClicked(java.awt.event.MouseEvent evt)
+	{
+		if (evt.isPopupTrigger())
+			chatParticipantsPopup.show(evt.getComponent(), evt.getX(), evt.getY());
 	}
 
 	public void appendText(String sender, String text)
@@ -309,4 +361,7 @@ public class P2PChat extends javax.swing.JFrame
 	private javax.swing.JScrollPane jScrollPane4;
 	private javax.swing.JList peerList;
 	private javax.swing.JButton sendButton;
+
+	private JPopupMenu chatParticipantsPopup;
+	private JPopupMenu peerListPopup;
 }
