@@ -34,7 +34,6 @@ import java.util.List;
 import javax.swing.SwingUtilities;
 import javax.swing.text.DefaultCaret;
 import javax.swing.DefaultListModel;
-import javax.swing.JButton;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
@@ -208,6 +207,8 @@ public class P2PChat extends javax.swing.JFrame
 				} catch (IOException ex) {
 					JOptionPane.showMessageDialog(null, "Unable to establish a connection to " + hostName + ":" + portName + "!");
 				}
+
+				peerListModel.addElement(hostName + ":" + port);
 			}
 		});
 		peerListPopup.add(buttonDisconnect);

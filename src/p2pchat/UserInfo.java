@@ -23,26 +23,28 @@
  */
 package p2pchat;
 
+import java.awt.KeyEventDispatcher;
+import java.awt.KeyboardFocusManager;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 
 public class UserInfo extends javax.swing.JFrame {
+	private KeyEventDispatcher keyDispatcher;
+
 	public UserInfo() {
 		initComponents();
-		addKeyListener(new KeyListener() {
-			public void keyTyped(KeyEvent e)
-			{
-			}
-			public void keyReleased(KeyEvent e)
-			{				
-			}
 
-			public void keyPressed(KeyEvent e)
-			{
-				if (e.getKeyCode() == KeyEvent.VK_ENTER)
+		keyDispatcher = new KeyEventDispatcher() {
+			@Override
+			public boolean dispatchKeyEvent(KeyEvent e) {
+				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
 					showMainWindow();
+					return true;
+				}
+				return false;
 			}
-		});
+		};
+		KeyboardFocusManager.getCurrentKeyboardFocusManager()
+			.addKeyEventDispatcher(keyDispatcher);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -167,6 +169,9 @@ public class UserInfo extends javax.swing.JFrame {
 
 		c.setCentralInfo(centralHost.getText(), centralp);
 		c.setVisible(true);
+
+		KeyboardFocusManager.getCurrentKeyboardFocusManager()
+			.removeKeyEventDispatcher(keyDispatcher);
 		setVisible(false);
 	}
 

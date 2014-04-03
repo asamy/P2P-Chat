@@ -28,9 +28,8 @@ import netlib.Server;
 import netlib.PeerInfo;
 
 import java.io.IOException;
-import java.net.Socket;
-import java.nio.ByteBuffer;
 
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 import java.util.Iterator;

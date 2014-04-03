@@ -141,7 +141,6 @@ public class Peer implements NetEventListener
 				return peers;
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
 			P2PChat.get().centralConnectionFailed();
 		}
 
@@ -357,6 +356,9 @@ public class Peer implements NetEventListener
 				// A peer sending us another peer he's connected to.
 				String hostName = getString(buffer);
 				int port = buffer.getInt();
+
+				if (hostName.equals(server.getAddress().getHostName()) && port == this.port)
+					return true;
 
 				P2PChat.get().peerFound(hostName, port);
 				break;
