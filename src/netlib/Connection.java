@@ -170,7 +170,7 @@ public class Connection implements Runnable
 				ByteBuffer buf = (ByteBuffer) pendingData.get(0);
 				channel.write(buf);
 
-				count += buf.capacity() - buf.remaining();
+				count += buf.remaining();
 				if (buf.remaining() > 0)
 					break;
 				pendingData.remove(0);
@@ -208,14 +208,7 @@ public class Connection implements Runnable
 
 		channel.keyFor(selector).cancel();
 		synchronized(changeRequests) {
-			Iterator changes = changeRequests.iterator();
-			while (changes.hasNext()) {
-				ChangeRequest req = (ChangeRequest) changes.next();
-				if (req.socket == channel) {
-					changeRequests.remove(req);
-					break;
-				}
-			}
+			changeRequests.clear();
 		}
 	}
 }

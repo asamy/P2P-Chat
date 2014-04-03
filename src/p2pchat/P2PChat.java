@@ -103,7 +103,6 @@ public class P2PChat extends javax.swing.JFrame
 		chatTextArea.setRows(5);
 		jScrollPane1.setViewportView(chatTextArea);
 
-		chatTextField.setText("Type here...");
 		chatTextField.addKeyListener(new java.awt.event.KeyAdapter() {
 			public void keyPressed(java.awt.event.KeyEvent evt) {
 				if (evt.getKeyCode() == KeyEvent.VK_ENTER)
@@ -184,7 +183,13 @@ public class P2PChat extends javax.swing.JFrame
 		JMenuItem buttonDisconnect = new JMenuItem("Disconnect");
 		buttonDisconnect.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				// TODO
+				String peerInfo = (String) peerList.getSelectedValue();
+				if (peerInfo == null)
+					return;
+
+				String peerHost = peerInfo.substring(0, peerInfo.indexOf(":"));
+				if (peer.disconnectFrom(peerHost))
+					chatTextArea.append("<Network> Successfully disconnected from: " + peerHost + "\n");
 			}
 		});
 
@@ -239,8 +244,10 @@ public class P2PChat extends javax.swing.JFrame
 				String newNick = new String();
 				for (int i = 1; i < splitted.length; ++i)
 					newNick += splitted[i] + " ";
+
 				peer.setName(newNick);
 				chatTextField.setText("");
+				chatTextArea.append("You changed your name to " + newNick + ".");
 				return;
 			}
 		}
@@ -315,13 +322,11 @@ public class P2PChat extends javax.swing.JFrame
 
 	public void peerDisconnected(Peer node)
 	{
-		node.sendMessage("You were kicked.");
-
 		int idx = chatParticipantsModel.indexOf(node.peerName);
 		if (idx != -1)
 			chatParticipantsModel.remove(idx);
 
-		chatTextArea.append(node.peerName + " was kicked from this chat.\n");
+		chatTextArea.append(node.peerName + " has disconnected.\n");
 	}
 
 	public void peerNameChanged(Peer node, String oldName, String newName)

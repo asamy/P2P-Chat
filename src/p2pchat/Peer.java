@@ -167,6 +167,30 @@ public class Peer implements NetEventListener
 		}
 	}
 
+	public boolean disconnectFrom(String hostName)
+	{
+		// Check if we're connected to that host
+		for (Object obj : connections) {
+			Connection c = (Connection) obj;
+			String peerHost = c.getChannel().socket().getInetAddress().getHostName();
+			if (peerHost.equals(hostName)) {
+				c.disconnect();
+				return true;
+			}
+		}
+
+		// Ok, we're not conencted to that peer, check if he's connected to us
+		for (Object obj : children) {
+			Peer peer = (Peer) obj;
+			if (server.hasChannel(peer.channel)) {
+				server.close(peer.channel);
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	public void setName(String name)
 	{
 		if (!name.equals(peerName))
