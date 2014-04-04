@@ -65,7 +65,7 @@ public class P2PChat extends javax.swing.JFrame
 		instance = this;
 		initComponents();
 
-		DefaultCaret caret = (DefaultCaret)chatTextArea.getCaret();
+		DefaultCaret caret = (DefaultCaret) chatTextArea.getCaret();
 		caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 
 		chatTextArea.setLineWrap(true);

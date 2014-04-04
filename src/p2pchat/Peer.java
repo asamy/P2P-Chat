@@ -45,7 +45,7 @@ import netlib.Server;
 public class Peer implements NetEventListener
 {
 	private final Server server;
-	private SocketChannel channel;	/* To identify other peers, not current.  */
+	private SocketChannel channel;	/* To identify other peers, not main.  */
 
 	public String peerName;
 	private int port;
