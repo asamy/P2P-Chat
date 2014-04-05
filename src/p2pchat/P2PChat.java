@@ -223,7 +223,9 @@ public class P2PChat extends javax.swing.JFrame
 		JMenuItem buttonKick = new JMenuItem("Kick");
 		buttonKick.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(java.awt.event.ActionEvent evt) {
-				peer.kick((String) chatParticipants.getSelectedValue());
+				String nickName = (String) chatParticipants.getSelectedValue();
+				if (nickName != null)
+					peer.kick(nickName);
 			}
 		});
 		chatParticipantsPopup.add(buttonKick);
@@ -326,7 +328,7 @@ public class P2PChat extends javax.swing.JFrame
 		if (idx != -1)
 			chatParticipantsModel.remove(idx);
 
-		if (timeout)
+		if (!timeout)
 			chatTextArea.append(node.peerName + " has disconnected.\n");
 		else
 			chatTextArea.append(node.peerName + " has timed out.\n");

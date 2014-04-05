@@ -56,7 +56,6 @@ public class Peer implements NetEventListener
 
 	private boolean awaitingPong = false;
 	private Date timeSinceLastPing = null;
-	private Runnable pingThread = null;
 
 	public Peer(Peer peer)
 	{
@@ -158,7 +157,6 @@ public class Peer implements NetEventListener
 		while (it.hasNext()) {
 			Peer peer = (Peer) it.next();
 			if (name.equals(peer.peerName)) {
-				P2PChat.get().peerDisconnected(peer, false);
 				if (channel != peer.channel) {
 					server.close(peer.channel);
 				} else {
@@ -353,7 +351,6 @@ public class Peer implements NetEventListener
 
 	public boolean handleWrite(SocketChannel ch, int count)
 	{
-		System.out.println("handleWrite(): Wrote " + count + " bytes.");
 		return true;
 	}
 
@@ -432,7 +429,7 @@ public class Peer implements NetEventListener
 		sendPort(peer);
 		sendPeers(peer);
 
-		peer.pingThread = new Runnable() {
+		new Thread() {
 			@Override
 			public void run() {
 				try {
@@ -466,8 +463,7 @@ public class Peer implements NetEventListener
 					}
 				}
 			}
-		};
-		new Thread(peer.pingThread).start();
+		}.start();
 
 		P2PChat.get().peerConnected(peer);
 		return true;
@@ -479,7 +475,6 @@ public class Peer implements NetEventListener
 		if (peer != null && peer.channel == ch) {
 			P2PChat.get().peerDisconnected(peer, false);
 			children.remove(peer);
-			peer.pingThread = null;
 			return true;
 		}
 

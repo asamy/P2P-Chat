@@ -160,7 +160,7 @@ public class Server implements Runnable
 				ByteBuffer buf = (ByteBuffer) queue.get(0);
 				ch.write(buf);
 
-				count += buf.remaining();
+				count += buf.capacity() - buf.remaining();
 				if (buf.remaining() > 0)
 					break;
 				queue.remove(0);

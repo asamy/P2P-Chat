@@ -170,7 +170,7 @@ public class Connection implements Runnable
 				ByteBuffer buf = (ByteBuffer) pendingData.get(0);
 				channel.write(buf);
 
-				count += buf.remaining();
+				count += buf.capacity() - buf.remaining();
 				if (buf.remaining() > 0)
 					break;
 				pendingData.remove(0);
