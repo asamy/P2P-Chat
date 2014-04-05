@@ -32,8 +32,8 @@ import java.net.Socket;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.Date;
 
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -436,7 +436,7 @@ public class Peer implements NetEventListener
 			@Override
 			public void run() {
 				try {
-					Thread.sleep(10000);
+					Thread.sleep(30000);
 				} catch (InterruptedException e) {
 				}
 
@@ -461,7 +461,7 @@ public class Peer implements NetEventListener
 					peer.awaitingPong = true;
 					peer.timeSinceLastPing = new Date();
 					try {
-						Thread.sleep(10000);
+						Thread.sleep(30000);
 					} catch (InterruptedException e) {
 					}
 				}
