@@ -144,7 +144,7 @@ public class Server implements Runnable
 	private void write(SelectionKey key) throws IOException
 	{
 		SocketChannel ch = (SocketChannel) key.channel();
-		int nr_wrote = 0;
+		int count = 0;
 
 		synchronized(pendingData) {
 			List queue = (List) pendingData.get(ch);
@@ -160,7 +160,7 @@ public class Server implements Runnable
 				ByteBuffer buf = (ByteBuffer) queue.get(0);
 				ch.write(buf);
 
-				nr_wrote += buf.remaining();
+				count += buf.remaining();
 				if (buf.remaining() > 0)
 					break;
 				queue.remove(0);
@@ -170,7 +170,7 @@ public class Server implements Runnable
 				key.interestOps(SelectionKey.OP_READ);
 		}
 
-		if (!listener.handleWrite(ch, nr_wrote))
+		if (!listener.handleWrite(ch, count))
 			close(ch);
 	}
 

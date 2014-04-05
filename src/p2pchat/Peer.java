@@ -32,6 +32,7 @@ import java.net.Socket;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.Date;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -52,6 +53,10 @@ public class Peer implements NetEventListener
 
 	private final List children = new LinkedList();
 	private final List connections = new LinkedList();
+
+	private boolean awaitingPong = false;
+	private Date timeSinceLastPing = null;
+	private Runnable pingThread = null;
 
 	public Peer(Peer peer)
 	{
@@ -335,6 +340,17 @@ public class Peer implements NetEventListener
 		return null;
 	}
 
+	private Peer findPeer(SocketChannel ch)
+	{
+		for (Object obj : children) {
+			Peer peer = (Peer) obj;
+			if (peer.channel == ch)
+				return peer;
+		}
+
+		return null;
+	}
+
 	public boolean handleWrite(SocketChannel ch, int count)
 	{
 		System.out.println("handleWrite(): Wrote " + count + " bytes.");
@@ -351,39 +367,25 @@ public class Peer implements NetEventListener
 				String message = getString(buffer);
 				String sender = null;
 
-				Iterator it = children.iterator();
-				while (it.hasNext()) {
-					Peer peer = (Peer) it.next();
-					if (peer.channel == ch) {
-						sender = peer.peerName;
-						break;
-					}
-				}
-
+				Peer p = findPeer(ch);
+				if (p != null)
+					sender = p.peerName;
 				P2PChat.get().appendText(sender, message);
 				break;
 			} case 0x1B: {	// nickname changed
 				String name = getString(buffer);
-				Iterator it = children.iterator();
-				while (it.hasNext()) {
-					Peer peer = (Peer) it.next();
-					if (peer.channel == ch) {
-						P2PChat.get().peerNameChanged(peer, peer.peerName, name);
-						peer.peerName = name;
-						break;
-					}
+				Peer peer = findPeer(ch);
+
+				if (peer != null) {
+					P2PChat.get().peerNameChanged(peer, peer.peerName, name);
+					peer.peerName = name;
 				}
 				break;
 			} case 0x1C: {	// Acknowledge port
 				int port = buffer.getInt();
-				Iterator it = children.iterator();
-				while (it.hasNext()) {
-					Peer peer = (Peer) it.next();
-					if (peer.channel == ch) {
-						peer.port = port;
-						break;
-					}
-				}
+				Peer peer = findPeer(ch);
+				if (peer != null)
+					peer.port = port;
 				break;
 			} case 0x1D: {
 				// A peer sending us another peer he's connected to.
@@ -395,6 +397,21 @@ public class Peer implements NetEventListener
 
 				P2PChat.get().peerFound(hostName, port);
 				break;
+			} case 0x1E: {	// PING
+				byte[] data = new byte[1];
+				data[0] = 0x1F;
+
+				Connection c = findConnection(ch);
+				if (c != null)
+					c.send(data);
+				else
+					server.send(ch, data);
+				break;
+			} case 0x1F: {	// PONG
+				Peer peer = findPeer(ch);
+				if (peer != null && peer.awaitingPong)
+					peer.awaitingPong = false;
+				break;
 			} default:
 				break;
 			}
@@ -403,9 +420,9 @@ public class Peer implements NetEventListener
 		return true;
 	}
 
-	public boolean handleConnection(SocketChannel ch)
+	public boolean handleConnection(final SocketChannel ch)
 	{
-		Peer peer = new Peer(this);
+		final Peer peer = new Peer(this);
 		children.add(peer);
 
 		peer.channel = ch;
@@ -415,20 +432,55 @@ public class Peer implements NetEventListener
 		sendPort(peer);
 		sendPeers(peer);
 
+		peer.pingThread = new Runnable() {
+			@Override
+			public void run() {
+				try {
+					Thread.sleep(10000);
+				} catch (InterruptedException e) {
+				}
+
+				byte[] data = new byte[1];
+				data[0] = 0x1E;
+
+				Connection c = findConnection(ch);
+				while ((c != null && c.isConnected()) || server.hasChannel(ch)) {
+					if (peer.awaitingPong
+						&& peer.timeSinceLastPing != null && new Date().after(peer.timeSinceLastPing)) {
+						// Disconnected peer, purge
+						P2PChat.get().peerDisconnected(peer);
+						children.remove(peer);
+						return;
+					}
+
+					if (c != null)
+						c.send(data);
+					else
+						server.send(ch, data);
+
+					peer.awaitingPong = true;
+					peer.timeSinceLastPing = new Date();
+					try {
+						Thread.sleep(10000);
+					} catch (InterruptedException e) {
+					}
+				}
+			}
+		};
+		new Thread(peer.pingThread).start();
+
 		P2PChat.get().peerConnected(peer);
 		return true;
 	}
 
 	public boolean handleConnectionClose(SocketChannel ch)
 	{
-		Iterator it = children.iterator();
-		while (it.hasNext()) {
-			Peer peer = (Peer) it.next();
-			if (peer.channel == ch) {
-				P2PChat.get().peerDisconnected(peer);
-				children.remove(peer);
-				return true;
-			}
+		Peer peer = findPeer(ch);
+		if (peer != null && peer.channel == ch) {
+			P2PChat.get().peerDisconnected(peer);
+			children.remove(peer);
+			peer.pingThread = null;
+			return true;
 		}
 
 		P2PChat.get().appendText("Network", "Unable to find disconnected peer!");
