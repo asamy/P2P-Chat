@@ -165,7 +165,7 @@ public class Peer implements NetEventListener
 					Connection c = findConnection(peer.channel);
 					if (c != null) {
 						c.disconnect();
-						P2PChat.get().appendText("Network", "You kicked yourself.");
+						P2PChat.get().appendText("Network", "Disconnected from " + name);
 					}
 				}
 			}
