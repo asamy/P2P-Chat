@@ -320,13 +320,16 @@ public class P2PChat extends javax.swing.JFrame
 		chatParticipantsModel.addElement(newPeer.peerName);
 	}
 
-	public void peerDisconnected(Peer node)
+	public void peerDisconnected(Peer node, boolean timeout)
 	{
 		int idx = chatParticipantsModel.indexOf(node.peerName);
 		if (idx != -1)
 			chatParticipantsModel.remove(idx);
 
-		chatTextArea.append(node.peerName + " has disconnected.\n");
+		if (timeout)
+			chatTextArea.append(node.peerName + " has disconnected.\n");
+		else
+			chatTextArea.append(node.peerName + " has timed out.\n");
 	}
 
 	public void peerNameChanged(Peer node, String oldName, String newName)

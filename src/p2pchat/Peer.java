@@ -448,7 +448,7 @@ public class Peer implements NetEventListener
 					if (peer.awaitingPong
 						&& peer.timeSinceLastPing != null && new Date().after(peer.timeSinceLastPing)) {
 						// Disconnected peer, purge
-						P2PChat.get().peerDisconnected(peer);
+						P2PChat.get().peerDisconnected(peer, true);
 						children.remove(peer);
 						return;
 					}
@@ -477,7 +477,7 @@ public class Peer implements NetEventListener
 	{
 		Peer peer = findPeer(ch);
 		if (peer != null && peer.channel == ch) {
-			P2PChat.get().peerDisconnected(peer);
+			P2PChat.get().peerDisconnected(peer, false);
 			children.remove(peer);
 			peer.pingThread = null;
 			return true;
