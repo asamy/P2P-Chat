@@ -158,7 +158,7 @@ public class Peer implements NetEventListener
 		while (it.hasNext()) {
 			Peer peer = (Peer) it.next();
 			if (name.equals(peer.peerName)) {
-				P2PChat.get().peerDisconnected(peer);
+				P2PChat.get().peerDisconnected(peer, false);
 				if (channel != peer.channel) {
 					server.close(peer.channel);
 				} else {
