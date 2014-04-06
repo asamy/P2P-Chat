@@ -241,15 +241,26 @@ public class P2PChat extends javax.swing.JFrame
 
 		if (message.charAt(0) == '/') {
 			String[] splitted = message.split(" ");
-			if (splitted[0].equals("/nick") && splitted.length > 1) {
-				// A Nickname can contain spaces
-				String newNick = new String();
-				for (int i = 1; i < splitted.length; ++i)
-					newNick += splitted[i] + " ";
+			if (splitted.length > 1) {
+				if (splitted[0].equals("/nick")) {
+					// A Nickname can contain spaces
+					String newNick = new String();
+					for (int i = 1; i < splitted.length; ++i)
+						newNick += splitted[i] + " ";
 
-				peer.setName(newNick);
-				chatTextField.setText("");
-				chatTextArea.append("You changed your name to " + newNick + ".");
+					peer.setName(newNick);
+					chatTextField.setText("");
+					chatTextArea.append("You changed your name to " + newNick + ".");
+				} else if (splitted[1].equals("/kick")) {
+					// A Nickname can contain spaces
+					String nick = new String();
+					for (int i = 1; i < splitted.length; ++i)
+						nick += splitted[i] + " ";
+
+					if (peerListModel.contains(nick))
+						peer.kick(nick);
+				} else
+					chatTextArea.append("Invalid command.");
 				return;
 			}
 		}
