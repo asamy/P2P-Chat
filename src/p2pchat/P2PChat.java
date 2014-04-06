@@ -251,7 +251,7 @@ public class P2PChat extends javax.swing.JFrame
 					peer.setName(newNick);
 					chatTextField.setText("");
 					chatTextArea.append("You changed your name to " + newNick + ".");
-				} else if (splitted[1].equals("/kick")) {
+				} else if (splitted[0].equals("/kick")) {
 					// A Nickname can contain spaces
 					String nick = new String();
 					for (int i = 1; i < splitted.length; ++i)
@@ -261,8 +261,14 @@ public class P2PChat extends javax.swing.JFrame
 						peer.kick(nick);
 				} else
 					chatTextArea.append("Invalid command.");
-				return;
+			} else if (splitted[0].equals("/help")) {
+				chatTextArea.append("Commands available:\n" +
+					"/nick <new nickname> (Can contain spaces)\n" +
+					"/kick <nickname> (Can contain spaces)\n"
+				);
 			}
+
+			return;
 		}
 
 		peer.sendMessage(message);
