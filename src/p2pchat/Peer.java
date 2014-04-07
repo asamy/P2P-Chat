@@ -390,8 +390,9 @@ public class Peer implements NetEventListener
 				Peer peer = findPeer(ch);
 
 				if (peer != null) {
-					P2PChat.get().peerNameChanged(peer, peer.peerName, name);
+					String oldName = peer.peerName;
 					peer.peerName = name;
+					P2PChat.get().peerNameChanged(peer, oldName, name);
 				}
 				break;
 			} case 0x1C: {	// Acknowledge port
