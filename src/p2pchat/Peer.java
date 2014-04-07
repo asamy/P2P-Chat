@@ -422,9 +422,7 @@ public class Peer implements NetEventListener
 			} case 0x20: {	// Nick name change request
 				// A peer has told us that our nickname is duplicate and
 				// has assigned to us a new nickname...  change to that nickname.
-				Peer peer = findPeer(ch);
-				if (peer != null)
-					peer.peerName = getString(buffer);
+				peerName = getString(buffer);
 				break;
 			} default:
 				break;
