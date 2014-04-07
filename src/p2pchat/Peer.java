@@ -224,6 +224,7 @@ public class Peer implements NetEventListener
 		if (len == 0)
 			return;
 
+		sendMessage("Duplicate nickname!", peer);
 		send(peer, mkbuffer((byte)0x20, peer.peerName, len).array());
 	}
 
