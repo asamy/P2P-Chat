@@ -218,6 +218,15 @@ public class Peer implements NetEventListener
 		send(peer, mkbuffer((byte)0x1A, message, len).array());
 	}
 
+	public void sendNameChangeRequest(Peer peer)
+	{
+		int len = peer.peerName.length();
+		if (len == 0)
+			return;
+
+		send(peer, mkbuffer((byte)0x20, peer.peerName, len).array());
+	}
+
 	private void putString(ByteBuffer buffer, String str, int len)
 	{
 		buffer.putInt(len);
@@ -408,6 +417,13 @@ public class Peer implements NetEventListener
 				Peer peer = findPeer(ch);
 				if (peer != null && peer.awaitingPong)
 					peer.awaitingPong = false;
+				break;
+			} case 0x20: {	// Nick name change request
+				// A peer has told us that our nickname is duplicate and
+				// has assigned to us a new nickname...  change to that nickname.
+				Peer peer = findPeer(ch);
+				if (peer != null)
+					peer.peerName = getString(buffer);
 				break;
 			} default:
 				break;

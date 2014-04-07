@@ -358,6 +358,7 @@ public class P2PChat extends javax.swing.JFrame
 			while (chatParticipantsModel.contains(newName)) {
 				newName += "_";
 				node.peerName = newName;
+				peer.sendNameChangeRequest(node);
 			}
 
 			chatParticipantsModel.setElementAt(newName, index);
