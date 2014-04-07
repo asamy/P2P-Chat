@@ -355,10 +355,12 @@ public class P2PChat extends javax.swing.JFrame
 	{
 		int index = chatParticipantsModel.indexOf(oldName);
 		if (index != -1) {
-			while (chatParticipantsModel.contains(newName) || newName.equals(peer.peerName)) {
-				newName += "_";
-				node.peerName = newName;
-				peer.sendNameChangeRequest(node);
+			if (peer.isChild(node)) {
+				while (chatParticipantsModel.contains(newName) || newName.equals(peer.peerName)) {
+					newName += "_";
+					node.peerName = newName;
+					peer.sendNameChangeRequest(node);
+				}
 			}
 
 			chatParticipantsModel.setElementAt(newName, index);
@@ -369,10 +371,10 @@ public class P2PChat extends javax.swing.JFrame
 		}
 	}
 
-	public void peerFound(String hostName, int port)
+	public void peerAcked(String from, String hostName, int port)
 	{
 		if (!peerListModel.contains(hostName + ":" + port)) {
-			chatTextArea.append("New peer found: " + hostName + ":" + port + "\n");
+			chatTextArea.append("New Peer Acked from " + from + ": " + hostName + ":" + port + "\n");
 			peerListModel.addElement(hostName + ":" + port);
 		}
 	}

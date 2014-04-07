@@ -104,6 +104,12 @@ public class Peer implements NetEventListener
 		return false;
 	}
 
+	// Check if @peer is our child (e.g. he connected to us)
+	public boolean isChild(Peer peer)
+	{
+		return server.hasChannel(peer.channel);
+	}
+
 	/*
 	 * The following function attempts to get a list
 	 * of available peers from the central point.  See
@@ -402,7 +408,7 @@ public class Peer implements NetEventListener
 				if (hostName.equals(server.getAddress().getHostName()) && port == this.port)
 					return true;
 
-				P2PChat.get().peerFound(hostName, port);
+				P2PChat.get().peerAcked(findPeer(ch).peerName, hostName, port);
 				break;
 			} case 0x1E: {	// PING
 				byte[] data = new byte[1];
