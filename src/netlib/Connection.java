@@ -69,7 +69,7 @@ public class Connection implements Runnable
 
 		ch.connect(new InetSocketAddress(this.hostAddress, this.port));
 		synchronized(this.changeRequests) {
-			this.changeRequests.add(new ChangeRequest(ch, ChangeRequest.REGISTER, SelectionKey.OP_CONNECT));
+			changeRequests.add(new ChangeRequest(ch, ChangeRequest.REGISTER, SelectionKey.OP_CONNECT));
 		}
 		return ch;
 	}
