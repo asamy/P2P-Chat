@@ -271,7 +271,12 @@ public class P2PChat extends javax.swing.JFrame
 			return;
 		}
 
-		peer.sendMessage(message);
+		String selected = (String) chatParticipants.getSelectedValue();
+		if (selected != null)
+			peer.sendMessage(message, selected);
+		else
+			peer.sendMessage(message);
+
 		chatTextField.setText("");
 		chatTextArea.append("<" + peer.peerName + "> " + message + "\n");
 	}
@@ -318,6 +323,10 @@ public class P2PChat extends javax.swing.JFrame
 
 	private void chatParticipantsMouseClicked(java.awt.event.MouseEvent evt)
 	{
+		String selected = (String) chatParticipants.getSelectedValue();
+		if (selected != null)
+			chatTextArea.append("You're now private messaging " + selected + " (CTRL+LCLICK to unselect)\n");
+
 		if (evt.isPopupTrigger())
 			chatParticipantsPopup.show(evt.getComponent(), evt.getX(), evt.getY());
 	}
