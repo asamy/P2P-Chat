@@ -23,6 +23,8 @@
  */
 package p2pchat;
 
+import java.awt.KeyEventDispatcher;
+import java.awt.KeyboardFocusManager;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 
@@ -30,23 +32,38 @@ import java.io.IOException;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+
+import javax.sound.sampled.Line;
+import javax.sound.sampled.LineUnavailableException;
 
 import javax.swing.SwingUtilities;
 import javax.swing.text.DefaultCaret;
 import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JList;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
 import netlib.PeerInfo;
 
 public class P2PChat extends javax.swing.JFrame
 {
 	private Peer peer;
-	private final DefaultListModel peerListModel, chatParticipantsModel;
+
+	private final DefaultListModel peerListModel;
+	private final DefaultListModel chatParticipantsModel;
+
 	private String centralHost;
 	private int centralPort;
+
 	private boolean hasPublishedSelf;
+
+	private final VoiceChatHandler voiceHandler = new VoiceChatHandler();
 
 	private static P2PChat instance;
 
@@ -69,6 +86,61 @@ public class P2PChat extends javax.swing.JFrame
 		caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 
 		chatTextArea.setLineWrap(true);
+		chatTextArea.append("Press F1 to toggle voice transmission (disabled by default)\n");
+
+		KeyEventDispatcher toggleVoiceDispatcher = new KeyEventDispatcher() {
+			@Override
+			public boolean dispatchKeyEvent(KeyEvent e) {
+				if (e.getKeyCode() == KeyEvent.VK_F1) {
+					if (!voiceHandler.isSatisified()) {
+						try {
+							Map map = VoiceChatHandler.getSourcesAvailable();
+							System.out.println(map.size());
+							String sources[] = (String[]) map.keySet().toArray(new String[0]);
+
+							String s = (String) JOptionPane.showInputDialog(
+								null,
+								"Choose Input device (Microphone / Stereo mix)",
+								"Input device",
+								JOptionPane.PLAIN_MESSAGE,
+								null,
+								sources,
+								sources[0]
+							);
+
+							if (s != null && s.length() > 0)
+								voiceHandler.setInput((Line) map.get(s));
+
+							map = VoiceChatHandler.getTargetsAvailable();
+							String targets[] = (String[]) map.keySet().toArray(new String[0]);
+
+							s = (String) JOptionPane.showInputDialog(
+								null,
+								"Choose Output device)",
+								"Output device",
+								JOptionPane.PLAIN_MESSAGE,
+								null,
+								targets,
+								targets[0]
+							);
+
+							if (s != null && s.length() > 0)
+								voiceHandler.setOutput((Line) map.get(s));
+						} catch (LineUnavailableException ex) {
+							JOptionPane.showMessageDialog(null, "Unable to acquire device!");
+							ex.printStackTrace();
+						}
+					}
+
+					voiceHandler.toggleCapture();
+					return true;
+				}
+				return false;
+			}
+		};
+
+		KeyboardFocusManager.getCurrentKeyboardFocusManager()
+			.addKeyEventDispatcher(toggleVoiceDispatcher);
 	}
 
 	public static P2PChat get()
@@ -86,22 +158,24 @@ public class P2PChat extends javax.swing.JFrame
 
 	@SuppressWarnings("unchecked")
 	private void initComponents() {
-		jScrollPane1 = new javax.swing.JScrollPane();
-		chatTextArea = new javax.swing.JTextArea();
-		chatTextField = new javax.swing.JTextField();
-		findPeersButton = new javax.swing.JButton();
-		jScrollPane3 = new javax.swing.JScrollPane();
-		chatParticipants = new javax.swing.JList();
-		jScrollPane4 = new javax.swing.JScrollPane();
-		peerList = new javax.swing.JList();
-		sendButton = new javax.swing.JButton();
+		JScrollPane jScrollPane1 = new JScrollPane();
+		JScrollPane jScrollPane4 = new JScrollPane();
+		JScrollPane jScrollPane3 = new JScrollPane();
 
-		setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+		JButton findPeersButton = new JButton("Find peers");
+		JButton sendButton = new JButton("Send");
 
+		chatParticipants = new JList();
+		peerList = new JList();
+
+		chatTextArea = new JTextArea();
+		chatTextField = new JTextField();
 		chatTextArea.setEditable(false);
 		chatTextArea.setColumns(20);
 		chatTextArea.setRows(5);
 		jScrollPane1.setViewportView(chatTextArea);
+
+		setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
 		chatTextField.addKeyListener(new java.awt.event.KeyAdapter() {
 			public void keyPressed(java.awt.event.KeyEvent evt) {
@@ -110,7 +184,6 @@ public class P2PChat extends javax.swing.JFrame
 			}
 		});
 
-		findPeersButton.setText("Find Peers");
 		findPeersButton.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(java.awt.event.ActionEvent evt) {
 				findPeersButtonActionPerformed(evt);
@@ -141,7 +214,6 @@ public class P2PChat extends javax.swing.JFrame
 		});
 		jScrollPane4.setViewportView(peerList);
 
-		sendButton.setText("Send");
 		sendButton.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				sendTextMessage();
@@ -395,15 +467,20 @@ public class P2PChat extends javax.swing.JFrame
 		chatTextArea.append("Unable to establish a connection to the central server.\n");
 	}
 
-	private javax.swing.JList chatParticipants;
-	private javax.swing.JTextArea chatTextArea;
-	private javax.swing.JTextField chatTextField;
-	private javax.swing.JButton findPeersButton;
-	private javax.swing.JScrollPane jScrollPane1;
-	private javax.swing.JScrollPane jScrollPane3;
-	private javax.swing.JScrollPane jScrollPane4;
-	private javax.swing.JList peerList;
-	private javax.swing.JButton sendButton;
+	public void transmitVoice(byte[] data, int count)
+	{
+		peer.sendAudioData(data, count);
+	}
+
+	public void peerTalk(byte[] data, int count)
+	{
+		voiceHandler.feedData(data, count);
+	}
+
+	private JList chatParticipants;
+	private JTextArea chatTextArea;
+	private JTextField chatTextField;
+	private JList peerList;
 
 	private JPopupMenu chatParticipantsPopup;
 	private JPopupMenu peerListPopup;

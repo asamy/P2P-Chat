@@ -245,6 +245,16 @@ public class Peer implements NetEventListener
 		send(peer, mkbuffer((byte)0x20, peer.peerName, len).array());
 	}
 
+	public void sendAudioData(byte[] data, int count)
+	{
+		ByteBuffer buffer = ByteBuffer.allocate(count * 2 + 1);
+		buffer.put((byte)0x21);
+		buffer.putInt(count);
+		buffer.put(data, 0, count);
+
+		send(null, buffer.array());
+	}
+
 	private void putString(ByteBuffer buffer, String str, int len)
 	{
 		buffer.putInt(len);
@@ -442,6 +452,12 @@ public class Peer implements NetEventListener
 				// has assigned to us a new nickname...  change to that nickname.
 				peerName = getString(buffer);
 				break;
+			} case 0x21: {
+				int len = buffer.getInt();
+				byte data[] = new byte[len];
+
+				buffer.get(data, 0, count);
+				P2PChat.get().peerTalk(data, len);
 			} default:
 				break;
 			}

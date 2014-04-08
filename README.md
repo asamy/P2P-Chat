@@ -16,6 +16,10 @@ p2pchat.  You should not run P2PChat.java on it's own, that's because UserInfo.j
 executes that class after retreiving user information.  It's quite confusing but I'll  
 find a better way to do that in the near future.  Also P2PChat.java has no main method.
 
+## TODO / In development
+
+- Voice chat
+
 ## Contributions
 
 Either send me an e-mail (<f.fallen45@gmail.com>) and attach your patch or do a pull request on GitHub.
