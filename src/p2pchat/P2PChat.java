@@ -326,6 +326,8 @@ public class P2PChat extends javax.swing.JFrame
 		String selected = (String) chatParticipants.getSelectedValue();
 		if (selected != null)
 			chatTextArea.append("You're now private messaging " + selected + " (CTRL+LCLICK to unselect)\n");
+		else
+			chatTextArea.append("You're now broadcasting to everyone.\n");
 
 		if (evt.isPopupTrigger())
 			chatParticipantsPopup.show(evt.getComponent(), evt.getX(), evt.getY());
