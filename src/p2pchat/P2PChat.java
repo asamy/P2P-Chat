@@ -116,7 +116,7 @@ public class P2PChat extends javax.swing.JFrame
 
 							s = (String) JOptionPane.showInputDialog(
 								null,
-								"Choose Output device)",
+								"Choose Output device",
 								"Output device",
 								JOptionPane.PLAIN_MESSAGE,
 								null,

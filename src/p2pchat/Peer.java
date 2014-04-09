@@ -74,14 +74,15 @@ public class Peer implements NetEventListener
 			children.add(peer);
 
 		server = new Server("".equals(host) ? null : InetAddress.getByName(host), port, this);
-		new Thread(this.server).start();
+		new Thread(server).start();
 	}
 
 	public void connect(String host, int port) throws IOException
 	{
 		Connection conn = new Connection(InetAddress.getByName(host), port, this);
-		new Thread(conn).start();
 		connections.add(conn);
+
+		new Thread(conn).start();
 	}
 
 	public boolean publishSelf(String host, int port)
@@ -424,6 +425,8 @@ public class Peer implements NetEventListener
 				P2PChat.get().peerAcked(findPeer(ch).peerName, hostName, port);
 				break;
 			} case 0x1E: {	// PING
+				// Unforunately I'm used to C/C++ code design and cannot make this
+				// any better without the existence of the & operator (or pointers in general).
 				byte[] data = new byte[1];
 				data[0] = 0x1F;
 
@@ -477,6 +480,8 @@ public class Peer implements NetEventListener
 				} catch (InterruptedException e) {
 				}
 
+				// Unforunately I'm used to C/C++ code design and cannot make this
+				// any better without the existence of the & operator (or pointers in general).
 				byte[] data = new byte[1];
 				data[0] = 0x1E;
 

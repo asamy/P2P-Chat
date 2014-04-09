@@ -68,8 +68,8 @@ public class VoiceChatHandler implements Runnable {
 			Line.Info[] sourceLinesInfo = mixer.getSourceLineInfo();
 
 			for (Line.Info sourceLineInfo : sourceLinesInfo)
-				if (sourceLineInfo.getLineClass().equals(SourceDataLine.class))
-					ret.put(info.getName(), AudioSystem.getLine(sourceLineInfo));
+				if (sourceLineInfo instanceof DataLine.Info)
+					ret.put(sourceLineInfo.toString(), AudioSystem.getLine(sourceLineInfo));
 		}
 
 		return ret;
@@ -85,8 +85,8 @@ public class VoiceChatHandler implements Runnable {
 			Line.Info[] targetLinesInfo = mixer.getSourceLineInfo();
 
 			for (Line.Info targetLineInfo : targetLinesInfo)
-				if (targetLineInfo.getLineClass().equals(TargetDataLine.class))
-					ret.put(info.getDescription(), AudioSystem.getLine(targetLineInfo));
+				if (targetLineInfo instanceof DataLine.Info)
+					ret.put(targetLineInfo.toString(), AudioSystem.getLine(targetLineInfo));
 		}
 
 		return ret;
