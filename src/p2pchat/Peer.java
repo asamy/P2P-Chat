@@ -206,15 +206,6 @@ public class Peer implements NetEventListener
 			sendName(name);
 	}
 
-	public void sendMessage(String message)
-	{
-		int len = message.length();
-		if (len == 0)
-			return;
-
-		send(null, mkbuffer((byte)0x1A, message, len).array());
-	}
-
 	public void sendMessage(String message, String rcpt)
 	{
 		for (Object obj : children) {

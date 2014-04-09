@@ -347,7 +347,7 @@ public class P2PChat extends javax.swing.JFrame
 		if (selected != null)
 			peer.sendMessage(message, selected);
 		else
-			peer.sendMessage(message);
+			peer.sendMessage(message, (Peer) null);
 
 		chatTextField.setText("");
 		chatTextArea.append("<" + peer.peerName + "> " + message + "\n");
