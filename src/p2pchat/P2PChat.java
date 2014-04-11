@@ -40,6 +40,7 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.swing.SwingUtilities;
 import javax.swing.text.DefaultCaret;
 import javax.swing.DefaultListModel;
+import javax.swing.JFrame;
 import javax.swing.JButton;
 import javax.swing.JList;
 import javax.swing.JMenuItem;
@@ -51,7 +52,7 @@ import javax.swing.JTextField;
 
 import netlib.PeerInfo;
 
-public class P2PChat extends javax.swing.JFrame
+public class P2PChat extends JFrame
 {
 	private Peer peer;
 
@@ -86,13 +87,20 @@ public class P2PChat extends javax.swing.JFrame
 		caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 
 		chatTextArea.setLineWrap(true);
-		chatTextArea.append("Press F1 to toggle voice transmission (disabled by default)\n");
+		chatTextArea.append(
+			"Press T to toggle voice transmission\n" +
+			"Press F1 to modify microphone/speakers settings\n" +
+			"Holding CTRL along with F1 will force modification\n"
+		);
 
 		KeyEventDispatcher toggleVoiceDispatcher = new KeyEventDispatcher() {
 			@Override
 			public boolean dispatchKeyEvent(KeyEvent e) {
-				if (e.getKeyCode() == KeyEvent.VK_F1) {
-					if (!voiceHandler.isSatisified()) {
+				if (e.getKeyCode() == KeyEvent.VK_T) {
+					voiceHandler.toggleCapture();
+				} else if (e.getKeyCode() == KeyEvent.VK_F1) {
+					if ((e.getModifiers() & KeyEvent.CTRL_DOWN_MASK) == KeyEvent.CTRL_DOWN_MASK
+						|| !voiceHandler.isSatisified()) {
 						try {
 							Map map = VoiceChatHandler.getSourcesAvailable();
 							System.out.println(map.size());
@@ -131,8 +139,6 @@ public class P2PChat extends javax.swing.JFrame
 							ex.printStackTrace();
 						}
 					}
-
-					voiceHandler.toggleCapture();
 					return true;
 				}
 				return false;
