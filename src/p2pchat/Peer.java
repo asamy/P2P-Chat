@@ -166,12 +166,14 @@ public class Peer implements NetEventListener
 			if (name.equals(peer.peerName)) {
 				if (channel != peer.channel) {
 					server.close(peer.channel);
+					return;
 				} else {
 					Connection c = findConnection(peer.channel);
 					if (c != null) {
 						c.disconnect();
 						P2PChat.get().appendText("Network", "Disconnected from " + name);
 					}
+					return;
 				}
 			}
 		}

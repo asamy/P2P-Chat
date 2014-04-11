@@ -26,9 +26,7 @@ package p2pchat;
 import java.util.HashMap;
 import java.util.Map;
 
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
@@ -43,9 +41,7 @@ public class VoiceChatHandler implements Runnable {
 	private TargetDataLine input;
 	private SourceDataLine output;
 
-	private final Lock lock = new ReentrantLock();
-	private final Condition condition = lock.newCondition();
-	private boolean running = false;
+	private final AtomicInteger running = new AtomicInteger();
 
 	public VoiceChatHandler()
 	{
@@ -107,13 +103,27 @@ public class VoiceChatHandler implements Runnable {
 
 	public void toggleCapture()
 	{
-		lock.lock();
-		try {
-			running = !running;
-			condition.signal();
-		} finally {
-			lock.unlock();
-		}
+		if (running.get() == 0)
+			running.set(1);
+		else
+			running.set(0);
+	}
+
+	public void startCapture()
+	{
+		if (running.get() == 0)
+			running.set(1);
+	}
+
+	public void stopCapture()
+	{
+		if (running.get() == 1)
+			running.set(0);
+	}
+
+	public boolean isCapturing()
+	{
+		return running.get() == 1;
 	}
 
 	public void feedData(byte[] data, int count)
@@ -126,14 +136,12 @@ public class VoiceChatHandler implements Runnable {
 	public void run()
 	{
 		while (true) {
-			lock.lock();
-			try {
-				while (!running)
-					condition.await();
-			} catch (InterruptedException e) {
-				;
-			} finally {
-				lock.unlock();
+			if (running.get() == 0) {
+				try {
+					Thread.sleep(3000);
+				} catch (InterruptedException ex) {
+					;
+				}
 			}
 
 			// Signaled, retrieve data if any.

@@ -252,8 +252,8 @@ public class P2PChat extends javax.swing.JFrame
 		);
 
 		peerListPopup = new JPopupMenu("Action...");
-		JMenuItem buttonDisconnect = new JMenuItem("Disconnect");
-		buttonDisconnect.addActionListener(new java.awt.event.ActionListener() {
+		JMenuItem mItemDisconnect = new JMenuItem("Disconnect");
+		mItemDisconnect.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String peerInfo = (String) peerList.getSelectedValue();
 				if (peerInfo == null)
@@ -265,8 +265,8 @@ public class P2PChat extends javax.swing.JFrame
 			}
 		});
 
-		JMenuItem buttonConnect = new JMenuItem("Connect");
-		buttonConnect.addActionListener(new java.awt.event.ActionListener() {
+		JMenuItem mItemConnect = new JMenuItem("Connect");
+		mItemConnect.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String hostName = JOptionPane.showInputDialog("Hostname/IP:");
 				String portName = JOptionPane.showInputDialog("Port:");
@@ -288,20 +288,19 @@ public class P2PChat extends javax.swing.JFrame
 				peerListModel.addElement(hostName + ":" + port);
 			}
 		});
-		peerListPopup.add(buttonDisconnect);
-		peerListPopup.add(buttonConnect);
+		peerListPopup.add(mItemConnect);
+		peerListPopup.add(mItemDisconnect);
 
 		chatParticipantsPopup = new JPopupMenu("Action...");
-		JMenuItem buttonKick = new JMenuItem("Kick");
-		buttonKick.addActionListener(new java.awt.event.ActionListener() {
+		JMenuItem mItemKick = new JMenuItem("Kick");
+		mItemKick.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(java.awt.event.ActionEvent evt) {
 				String nickName = (String) chatParticipants.getSelectedValue();
 				if (nickName != null)
 					peer.kick(nickName);
 			}
 		});
-		chatParticipantsPopup.add(buttonKick);
-
+		chatParticipantsPopup.add(mItemKick);
 		pack();
 	}
 
