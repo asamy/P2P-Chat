@@ -37,6 +37,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import javax.swing.SwingUtilities;
 
 import netlib.NetEventListener;
 import netlib.Connection;
@@ -99,7 +100,11 @@ public class Peer implements NetEventListener
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
-			P2PChat.get().centralConnectionFailed();
+			SwingUtilities.invokeLater(new Runnable() {
+				public void run() {
+					P2PChat.get().centralConnectionFailed();
+				}
+			});
 		}
 
 		return false;
@@ -152,13 +157,17 @@ public class Peer implements NetEventListener
 				return peers;
 			}
 		} catch (IOException e) {
-			P2PChat.get().centralConnectionFailed();
+			SwingUtilities.invokeLater(new Runnable() {
+				public void run() {
+					P2PChat.get().centralConnectionFailed();
+				}
+			});
 		}
 
 		return null;
 	}
 
-	public void kick(String name)
+	public void kick(final String name)
 	{
 		Iterator it = children.iterator();
 		while (it.hasNext()) {
@@ -171,7 +180,11 @@ public class Peer implements NetEventListener
 					Connection c = findConnection(peer.channel);
 					if (c != null) {
 						c.disconnect();
-						P2PChat.get().appendText("Network", "Disconnected from " + name);
+						SwingUtilities.invokeLater(new Runnable() {
+							public void run() {
+								P2PChat.get().appendText("Network", "Disconnected from " + name);
+							}
+						});
 					}
 					return;
 				}
@@ -377,29 +390,40 @@ public class Peer implements NetEventListener
 		return true;
 	}
 
-	public boolean handleRead(SocketChannel ch, ByteBuffer buffer, int count)
+	public boolean handleRead(final SocketChannel ch, ByteBuffer buffer, int count)
 	{
 		while (buffer.hasRemaining()) {
 			byte request = buffer.get();
 
 			switch (request) {
 			case 0x1A: {	// message received
-				String message = getString(buffer);
-				String sender = null;
-
 				Peer p = findPeer(ch);
-				if (p != null)
-					sender = p.peerName;
-				P2PChat.get().appendText(sender, message);
+				if (p == null) {
+					System.out.println("[Message received] Unable to find peer");
+					return false;
+				}
+
+				final String message = getString(buffer);
+				final String sender  = p.peerName;
+				SwingUtilities.invokeLater(new Runnable() {
+					public void run() {
+						P2PChat.get().appendText(sender, message);
+					}
+				});
 				break;
 			} case 0x1B: {	// nickname changed
-				String name = getString(buffer);
-				Peer peer = findPeer(ch);
+				final String name = getString(buffer);
+				final Peer peer = findPeer(ch);
 
 				if (peer != null) {
-					String oldName = peer.peerName;
+					final String oldName = peer.peerName;
 					peer.peerName = name;
-					P2PChat.get().peerNameChanged(peer, oldName, name);
+
+					SwingUtilities.invokeLater(new Runnable() {
+						public void run() {
+							P2PChat.get().peerNameChanged(peer, oldName, name);
+						}
+					});
 				}
 				break;
 			} case 0x1C: {	// Acknowledge port
@@ -410,13 +434,17 @@ public class Peer implements NetEventListener
 				break;
 			} case 0x1D: {
 				// A peer sending us another peer he's connected to.
-				String hostName = getString(buffer);
-				int port = buffer.getInt();
+				final String hostName = getString(buffer);
+				final int port = buffer.getInt();
 
 				if (hostName.equals(server.getAddress().getHostName()) && port == this.port)
 					return true;
 
-				P2PChat.get().peerAcked(findPeer(ch).peerName, hostName, port);
+				SwingUtilities.invokeLater(new Runnable() {
+					public void run() {
+						P2PChat.get().peerAcked(findPeer(ch).peerName, hostName, port);
+					}
+				});
 				break;
 			} case 0x1E: {	// PING
 				// Unforunately I'm used to C/C++ code design and cannot make this
@@ -441,11 +469,15 @@ public class Peer implements NetEventListener
 				peerName = getString(buffer);
 				break;
 			} case 0x21: {
-				int len = buffer.getInt();
-				byte data[] = new byte[len];
-
+				final int len = buffer.getInt();
+				final byte data[] = new byte[len];
 				buffer.get(data, 0, count);
-				P2PChat.get().peerTalk(data, len);
+
+				SwingUtilities.invokeLater(new Runnable() {
+					public void run() {
+						P2PChat.get().peerTalk(data, len);
+					}
+				});
 			} default:
 				break;
 			}
@@ -484,7 +516,11 @@ public class Peer implements NetEventListener
 					if (peer.awaitingPong
 						&& peer.timeSinceLastPing != null && new Date().after(peer.timeSinceLastPing)) {
 						// Disconnected peer, purge
-						P2PChat.get().peerDisconnected(peer, true);
+						SwingUtilities.invokeLater(new Runnable() {
+							public void run() {
+								P2PChat.get().peerDisconnected(peer, true);
+							}
+						});
 						children.remove(peer);
 						return;
 					}
@@ -504,20 +540,34 @@ public class Peer implements NetEventListener
 			}
 		}.start();
 
-		P2PChat.get().peerConnected(peer);
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				P2PChat.get().peerConnected(peer);
+			}
+		});
 		return true;
 	}
 
 	public boolean handleConnectionClose(SocketChannel ch)
 	{
-		Peer peer = findPeer(ch);
+		final Peer peer = findPeer(ch);
 		if (peer != null && peer.channel == ch) {
-			P2PChat.get().peerDisconnected(peer, false);
+			SwingUtilities.invokeLater(new Runnable() {
+				public void run() {
+					P2PChat.get().peerDisconnected(peer, false);
+				}
+			});
+
 			children.remove(peer);
 			return true;
 		}
 
-		P2PChat.get().appendText("Network", "Unable to find disconnected peer!");
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				P2PChat.get().appendText("Network", "Unable to find disconnected peer!");
+			}
+		});
+
 		return true;
 	}
 }
