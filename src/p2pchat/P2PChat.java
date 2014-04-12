@@ -103,12 +103,11 @@ public class P2PChat extends JFrame
 						|| !voiceHandler.isSatisified()) {
 						try {
 							Map map = VoiceChatHandler.getSourcesAvailable();
-							System.out.println(map.size());
 							String sources[] = (String[]) map.keySet().toArray(new String[0]);
 
 							String s = (String) JOptionPane.showInputDialog(
 								null,
-								"Choose Input device (Microphone / Stereo mix)",
+								"Choose Input device",
 								"Input device",
 								JOptionPane.PLAIN_MESSAGE,
 								null,

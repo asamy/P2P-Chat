@@ -290,16 +290,8 @@ public class Peer implements NetEventListener
 		ByteBuffer out = mkbuffer((byte)0x1B, newName, len);
 		Iterator it = children.iterator();
 		while (it.hasNext())
-			sendName((Peer)it.next(), out);
+			send((Peer)it.next(), out.array());
 		peerName = newName;
-	}
-
-	private void sendName(Peer peer, ByteBuffer out)
-	{
-		if (peer == null)
-			return;
-
-		send(peer, out.array());
 	}
 
 	private void sendPeers(Peer peer)
@@ -470,7 +462,7 @@ public class Peer implements NetEventListener
 		peer.channel = ch;
 		peer.port    = port;
 
-		sendName(peer, mkbuffer((byte)0x1B, peerName, peerName.length()));
+		send(peer, mkbuffer((byte)0x1B, peerName, peerName.length()).array());
 		sendPort(peer);
 		sendPeers(peer);
 
