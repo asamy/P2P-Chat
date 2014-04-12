@@ -23,6 +23,8 @@
  */
 package p2pchat;
 
+import javax.swing.SwingUtilities;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -37,7 +39,6 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import javax.swing.SwingUtilities;
 
 import netlib.NetEventListener;
 import netlib.Connection;

@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 
 import javax.sound.sampled.Line;
-import javax.sound.sampled.LineUnavailableException;
 
 import javax.swing.SwingUtilities;
 import javax.swing.text.DefaultCaret;
@@ -55,6 +54,14 @@ import netlib.PeerInfo;
 public class P2PChat extends JFrame
 {
 	private Peer peer;
+
+	private JList chatParticipants;
+	private JTextArea chatTextArea;
+	private JTextField chatTextField;
+	private JList peerList;
+
+	private JPopupMenu chatParticipantsPopup;
+	private JPopupMenu peerListPopup;
 
 	private final DefaultListModel peerListModel;
 	private final DefaultListModel chatParticipantsModel;
@@ -96,9 +103,11 @@ public class P2PChat extends JFrame
 		KeyEventDispatcher toggleVoiceDispatcher = new KeyEventDispatcher() {
 			@Override
 			public boolean dispatchKeyEvent(KeyEvent e) {
-				if (e.getKeyCode() == KeyEvent.VK_T) {
+				switch (e.getKeyCode()) {
+				case KeyEvent.VK_T:
 					voiceHandler.toggleCapture();
-				} else if (e.getKeyCode() == KeyEvent.VK_F1) {
+					return true;
+				case KeyEvent.VK_F1: {
 					if ((e.getModifiers() & KeyEvent.CTRL_DOWN_MASK) == KeyEvent.CTRL_DOWN_MASK
 						|| !voiceHandler.isSatisified()) {
 						Map map = VoiceChatHandler.getSourcesAvailable();
@@ -134,8 +143,9 @@ public class P2PChat extends JFrame
 							voiceHandler.setOutput((Line) map.get(s));
 					}
 					return true;
+				} default:
+					return false;
 				}
-				return false;
 			}
 		};
 
@@ -475,12 +485,4 @@ public class P2PChat extends JFrame
 	{
 		voiceHandler.feedData(data, count);
 	}
-
-	private JList chatParticipants;
-	private JTextArea chatTextArea;
-	private JTextField chatTextField;
-	private JList peerList;
-
-	private JPopupMenu chatParticipantsPopup;
-	private JPopupMenu peerListPopup;
 }
