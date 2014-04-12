@@ -101,42 +101,37 @@ public class P2PChat extends JFrame
 				} else if (e.getKeyCode() == KeyEvent.VK_F1) {
 					if ((e.getModifiers() & KeyEvent.CTRL_DOWN_MASK) == KeyEvent.CTRL_DOWN_MASK
 						|| !voiceHandler.isSatisified()) {
-						try {
-							Map map = VoiceChatHandler.getSourcesAvailable();
-							String sources[] = (String[]) map.keySet().toArray(new String[0]);
+						Map map = VoiceChatHandler.getSourcesAvailable();
+						String sources[] = (String[]) map.keySet().toArray(new String[0]);
 
-							String s = (String) JOptionPane.showInputDialog(
-								null,
-								"Choose Input device",
-								"Input device",
-								JOptionPane.PLAIN_MESSAGE,
-								null,
-								sources,
-								sources[0]
-							);
+						String s = (String) JOptionPane.showInputDialog(
+							null,
+							"Choose Input device",
+							"Input device",
+							JOptionPane.PLAIN_MESSAGE,
+							null,
+							sources,
+							sources[0]
+						);
 
-							if (s != null && s.length() > 0)
-								voiceHandler.setInput((Line) map.get(s));
+						if (s != null && s.length() > 0)
+							voiceHandler.setInput((Line) map.get(s));
 
-							map = VoiceChatHandler.getTargetsAvailable();
-							String targets[] = (String[]) map.keySet().toArray(new String[0]);
+						map = VoiceChatHandler.getTargetsAvailable();
+						String targets[] = (String[]) map.keySet().toArray(new String[0]);
 
-							s = (String) JOptionPane.showInputDialog(
-								null,
-								"Choose Output device",
-								"Output device",
-								JOptionPane.PLAIN_MESSAGE,
-								null,
-								targets,
-								targets[0]
-							);
+						s = (String) JOptionPane.showInputDialog(
+							null,
+							"Choose Output device",
+							"Output device",
+							JOptionPane.PLAIN_MESSAGE,
+							null,
+							targets,
+							targets[0]
+						);
 
-							if (s != null && s.length() > 0)
-								voiceHandler.setOutput((Line) map.get(s));
-						} catch (LineUnavailableException ex) {
-							JOptionPane.showMessageDialog(null, "Unable to acquire device!");
-							ex.printStackTrace();
-						}
+						if (s != null && s.length() > 0)
+							voiceHandler.setOutput((Line) map.get(s));
 					}
 					return true;
 				}

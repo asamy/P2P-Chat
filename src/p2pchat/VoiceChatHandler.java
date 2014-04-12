@@ -54,7 +54,7 @@ public class VoiceChatHandler implements Runnable {
 		return input != null && output != null;
 	}
 
-	public static Map getSourcesAvailable() throws LineUnavailableException
+	public static Map getSourcesAvailable()
 	{
 		Map ret = new HashMap();
 
@@ -63,15 +63,21 @@ public class VoiceChatHandler implements Runnable {
 			Mixer mixer = AudioSystem.getMixer(info);
 			Line.Info[] sourceLinesInfo = mixer.getSourceLineInfo();
 
-			for (Line.Info sourceLineInfo : sourceLinesInfo)
-				if (sourceLineInfo instanceof DataLine.Info)
-					ret.put(sourceLineInfo.toString(), AudioSystem.getLine(sourceLineInfo));
+			for (Line.Info sourceLineInfo : sourceLinesInfo) {
+				if (sourceLineInfo instanceof DataLine.Info) {
+					try (Line line = AudioSystem.getLine(sourceLineInfo)) {
+						ret.put(info.getDescription(), line);
+					} catch (LineUnavailableException e) {
+						;
+					}
+				}
+			}
 		}
 
 		return ret;
 	}
 
-	public static Map getTargetsAvailable() throws LineUnavailableException
+	public static Map getTargetsAvailable()
 	{
 		Map ret = new HashMap();
 
@@ -80,25 +86,42 @@ public class VoiceChatHandler implements Runnable {
 			Mixer mixer = AudioSystem.getMixer(info);
 			Line.Info[] targetLinesInfo = mixer.getSourceLineInfo();
 
-			for (Line.Info targetLineInfo : targetLinesInfo)
-				if (targetLineInfo instanceof DataLine.Info)
-					ret.put(targetLineInfo.toString(), AudioSystem.getLine(targetLineInfo));
+			for (Line.Info targetLineInfo : targetLinesInfo) {
+				if (targetLineInfo instanceof DataLine.Info) {
+					try (Line line = AudioSystem.getLine(targetLineInfo)) {
+						ret.put(info.getDescription(), line);
+					} catch (LineUnavailableException e) {
+						;
+					}
+				}
+			}
 		}
 
 		return ret;
 	}
 
-	public void setInput(Line line) throws LineUnavailableException
+	public void setInput(Line line)
 	{
 		input = (TargetDataLine) line;
-		if (input != null)
-			input.open(new AudioFormat(8000.0f, 16, 1, true, true));
+		if (input != null) {
+			try {
+				input.open(new AudioFormat(8000.0f, 16, 1, true, true));
+			} catch (LineUnavailableException e) {
+				e.printStackTrace();
+			}
+		}
 	}
-	public void setOutput(Line line) throws LineUnavailableException
+
+	public void setOutput(Line line)
 	{
 		output = (SourceDataLine) line;
-		if (output != null)
-			output.open(new AudioFormat(8000.0f, 16, 1, true, true));
+		if (output != null) {
+			try {
+				output.open(new AudioFormat(8000.0f, 16, 1, true, true));
+			} catch (LineUnavailableException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	public void toggleCapture()
