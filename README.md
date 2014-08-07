@@ -19,6 +19,7 @@ find a better way to do that in the near future.  Also P2PChat.java has no main 
 ## TODO / In development
 
 - Voice chat
+- Purge thread in peer and use an event scheduler instead
 
 ## Contributions
 
