@@ -340,12 +340,26 @@ public class P2PChat extends JFrame
 
 					if (peerListModel.contains(nick))
 						peer.kick(nick);
+                                } else if (splitted[0].equals("/connect")) {
+                                    String host = splitted[1];
+                                    int port = 9119;
+                                    if (splitted.length > 2)
+                                        port = Integer.parseInt(splitted[2]);
+
+                                    try {
+                                        chatTextArea.append("Attempting connection to " + host + ":" + port + "\n");
+                                        peer.connect(host, port);
+                                    } catch (IOException e) {
+                                        chatTextArea.append("Unable to connect to: " + host + ":" + port + "\n");
+                                        e.printStackTrace();
+                                    }
 				} else
 					chatTextArea.append("Invalid command.");
 			} else if (splitted[0].equals("/help")) {
 				chatTextArea.append("Commands available:\n" +
 					"/nick <new nickname> (Can contain spaces)\n" +
-					"/kick <nickname> (Can contain spaces)\n"
+					"/kick <nickname> (Can contain spaces)\n" +
+                                        "/connect <host> <port>"
 				);
 			}
 
@@ -417,7 +431,7 @@ public class P2PChat extends JFrame
 	public void appendText(String sender, String text)
 	{
 		if (sender == null)
-			sender = "unknown";
+			sender = "Network";
 
 		chatTextArea.append("<" + sender + "> " + text + "\n");
 	}

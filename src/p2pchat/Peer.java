@@ -418,13 +418,12 @@ public class Peer implements NetEventListener
 
 				if (peer != null) {
 					final String oldName = peer.peerName;
-					peer.peerName = name;
-
 					SwingUtilities.invokeLater(new Runnable() {
 						public void run() {
 							P2PChat.get().peerNameChanged(peer, oldName, name);
 						}
 					});
+                                        peer.peerName = name;
 				}
 				break;
 			} case 0x1C: {	// Acknowledge port
@@ -448,8 +447,6 @@ public class Peer implements NetEventListener
 				});
 				break;
 			} case 0x1E: {	// PING
-				// Unforunately I'm used to C/C++ code design and cannot make this
-				// any better without the existence of the & operator (or pointers in general).
 				byte[] data = new byte[1];
 				data[0] = 0x1F;
 
@@ -468,6 +465,11 @@ public class Peer implements NetEventListener
 				// A peer has told us that our nickname is duplicate and
 				// has assigned to us a new nickname...  change to that nickname.
 				peerName = getString(buffer);
+                                SwingUtilities.invokeLater(new Runnable() {
+                                    public void run() {
+                                        P2PChat.get().appendText("Network", "Your name was forcibly changed to " + peerName + " due to duplication!");
+                                    }
+                                });
 				break;
 			} case 0x21: {
 				final int len = buffer.getInt();
@@ -507,8 +509,6 @@ public class Peer implements NetEventListener
 				} catch (InterruptedException e) {
 				}
 
-				// Unforunately I'm used to C/C++ code design and cannot make this
-				// any better without the existence of the & operator (or pointers in general).
 				byte[] data = new byte[1];
 				data[0] = 0x1E;
 
